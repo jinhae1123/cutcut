@@ -512,7 +512,7 @@ function actHair(c){
   ${fr.fill}
   <rect x="96" y="114" width="18" height="12" fill="${pk(SKIN,c.r)}"/>
   ${kid(105,98,hair[0],null,pk(SKIN,c.r),false)}
-  <circle cx="${f(c.r()<.5?84:126)}" cy="76" r="5" fill="${clip}"/><circle cx="${f(c.r()<.5?84:126)}" cy="76" r="2" fill="#fff"/>
+  ${(()=>{const x=c.r()<.5?84:126;return `<circle cx="${x}" cy="76" r="5" fill="${clip}"/><circle cx="${x}" cy="76" r="2" fill="#fff"/>`})()}
   ${fr.cuts}${emo(40,288,6,'✂️')}`;
 }
 function actFlower(c){
