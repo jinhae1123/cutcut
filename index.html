@@ -32,8 +32,17 @@ h1,h2,.jua{font-family:Jua,"Gowun Dodum",sans-serif;font-weight:400}
 .panel{display:flex;flex-direction:column;gap:22px;counter-reset:step}
 .box:not([hidden]){counter-increment:step}.box h2 .n::before{content:counter(step)}
 [hidden]{display:none!important}
-.mode{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.mode button{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:16px;padding:10px;min-height:64px;font-family:Jua,sans-serif;font-size:16px;cursor:pointer;line-height:1.25;word-break:keep-all}
+.mode{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:10px}
+.adv{border:2px solid var(--line);border-radius:14px;padding:10px 12px}.adv summary{font-size:17px}
+.kinds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.kc{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:16px;padding:12px 10px;cursor:pointer;text-align:left;display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:center;min-height:64px;font:inherit}
+.kc .ic{font-size:28px;grid-row:span 2}.kc b{font-family:Jua,sans-serif;font-weight:400;font-size:17px;line-height:1.2}.kc small{color:var(--muted);font-size:12.5px}
+.kc:first-child{grid-column:1/-1}
+.kc[aria-pressed=true]{border-color:var(--sky);background:light-dark(#eaf6fc,#1f3340)}
+.kc:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+.re{float:right;border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:4px 12px;font:inherit;font-size:14px;cursor:pointer;margin-top:-4px}
+@media print{.re{display:none}}
+.mode button{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:14px;padding:8px 4px;min-height:58px;font-family:Jua,sans-serif;font-size:14.5px;cursor:pointer;line-height:1.25;word-break:keep-all}
 .mode button small{display:block;font-family:"Gowun Dodum",sans-serif;font-size:12.5px;color:var(--muted);margin-top:2px}
 .mode button[aria-pressed=true]{background:var(--sky);border-color:var(--sky);color:#fff}.mode button[aria-pressed=true] small{color:#eaf6fc}
 .grp{margin:8px 0 0;font-family:Jua,sans-serif;font-size:15px;color:var(--tom)}
@@ -106,12 +115,26 @@ summary{cursor:pointer;font-family:Jua,sans-serif;font-size:18px;min-height:32px
     <h1>싹둑싹둑 오리기 놀이</h1>
     <p>3~5세 가위 선 따라 오리기부터 테마 자르기·오려 붙이기·색칠 활동까지, A4로 인쇄해요</p>
   </div>
-  <div class="bubble" id="bubble"><b>싹둑이</b> · 단계와 테마를 고르면 활동지가 바로 만들어져요!</div>
+  <div class="bubble" id="bubble"><b>싹둑이</b> · 무엇을 만들지와 아이 나이만 고르면 끝!</div>
 </header>
 
 <div class="wrap" id="app">
   <aside class="panel">
-    <div class="mode" id="mode" role="group" aria-label="활동지 종류"><button data-mode="line">✂️ 단계별<small>선·도형·그림</small></button><button data-mode="act">🎨 골라 만들기<small>놀이 활동 100가지</small></button><button data-mode="rand">🎲 랜덤 뽑기<small>무엇이 나올까?</small></button></div>
+    <section class="box" data-modes="easy">
+      <h2><span class="n"></span>무엇을 만들까요?</h2>
+      <div class="kinds" id="ekind"></div>
+    </section>
+    <section class="box" data-modes="easy">
+      <h2><span class="n"></span>아이 나이</h2>
+      <div class="chips" id="eage"></div>
+    </section>
+    <section class="box" data-modes="easy">
+      <h2><span class="n"></span>주제 <small class="note">(안 골라도 돼요)</small></h2>
+      <div class="chips" id="ecat"></div>
+    </section>
+    <details id="adv" class="adv"><summary>⚙️ 자세히 고르기 <small class="note">단계·활동·테마를 직접 고를 때</small></summary>
+    <div class="mode" id="mode" role="group" aria-label="활동지 종류"><button data-mode="easy">✨ 쉽게<small>기본 화면</small></button><button data-mode="line">✂️ 단계별<small>선·도형·그림</small></button><button data-mode="act">🎨 골라 만들기<small>100가지 중에서</small></button><button data-mode="rand">🎲 랜덤<small>종류·계절</small></button></div>
+    </details>
     <section class="box" data-modes="act rand">
       <h2><span class="n"></span>계절 고르기</h2>
       <div class="chips" id="seasons"></div>
@@ -149,7 +172,7 @@ summary{cursor:pointer;font-family:Jua,sans-serif;font-size:18px;min-height:32px
         <span class="note" id="count"></span>
       </div>
     </section>
-    <section class="box">
+    <section class="box" data-modes="line act rand">
       <h2><span class="n"></span>테마 고르기</h2>
       <p class="note" data-modes="act rand" style="margin:-4px 0 8px">손가락 인형·퍼즐·가면 그림이 테마를 따라가요.</p>
       <div class="chips" id="themes"></div>
@@ -236,8 +259,8 @@ const shuffle=(a,r)=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.flo
 const poly=p=>'M'+p.map(q=>f(q[0])+' '+f(q[1])).join('L');
 SIL.star={n:'별을',d:poly(makeShape('star',50,46,42).pts)+'Z',x:'<circle cx="42" cy="46" r="2.5"/><circle cx="58" cy="46" r="2.5"/><path d="M44 56 Q50 61 56 56"/>'};
 
-let S={levels:[1],per:1,theme:'animal',story:true,name:true,dash:false,bw:false,missions:2,season:'all',rand:{kinds:['line','A','B','C'],max:2},mode:'line',acts:['noodle','cook','puzzle'],diff:2,seed:Date.now()%100000,custom:{}};
-try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)S={...S,...s,seed:S.seed}}catch(e){}
+let S={levels:[1],per:4,theme:'animal',story:true,name:true,dash:false,bw:false,missions:2,easy:{kind:'mix',age:4,cat:'all',salt:{}},season:'all',rand:{kinds:['line','A','B','C'],max:2},mode:'easy',acts:['noodle','cook','puzzle'],diff:2,seed:Date.now()%100000,custom:{}};
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)S={...S,...s,seed:S.seed};if(s&&!s.easy)S.mode='easy'}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 const allThemes=()=>({...THEMES,...S.custom});
 
@@ -1408,10 +1431,46 @@ Object.assign(ACTS,{
   shadow:{type:'C',icon:'🌓',name:'그림자 짝 찾기',desc:'모양 보고 그림자에 붙이기',cap:'그림자 짝을 찾아 색칠하고 오려 붙여요',tip:'테마를 바꾸면 그림이 바뀌어요',fn:actShadow,noDiff:1,theme:1}
 });
 
+
+/* ===== 쉽게 고르기 ===== */
+const CATS={animal:'🐶 동물',food:'🍎 음식',nature:'🌳 자연·날씨',life:'🚗 탈것·생활',play:'🎉 놀이·만들기',holiday:'🎄 명절·크리스마스'};
+const CATMAP={animal:'octo lion jelly squid bowl farm village dinopark deepsea pond jungle finger mask band fishing stick shadow memory bookmark hanger',
+ food:'noodle kimbap melon spaghetti layercake cook cart cake pizza lunch fridge fruit veggie icecream burger bakery topper',
+ nature:'rain wave flower rainbow willow rice sunrays waterfall bamboo seaweed aurora dunes mountain garden atree sky beach leaves fold pflower snowflake pumpkin mittens',
+ life:'hair broom brush curtain train road parking dress laundry desk house vase glasses watch ring card',
+ play:'balloons kite pompom crown medal garland pinwheel mobile snake numpuzzle puzzle fan doll chain',
+ holiday:'scarf santa sledhill snowman sled tree ornament tteokguk songpyeon'};
+Object.entries(CATMAP).forEach(([k,v])=>v.split(' ').forEach(a=>{if(ACTS[a])ACTS[a].cat=k}));
+Object.values(ACTS).forEach(a=>{if(!a.cat)a.cat='play'});
+const HARD=['snowflake','fold','doll','glasses','ring','snake','pinwheel','chain','numpuzzle','pflower','watch'];
+const KINDS={mix:['🎲','골고루 섞어서','여러 활동을 골고루'],line:['✂️','선 따라 오리기','곧은 선·물결·도형'],A:['🍜','테마 자르기','국수·문어·무지개'],B:['🧩','오려 붙이기','오려서 그림에 붙이기'],C:['🎨','색칠하고 오리기','왕관·가면·카드']};
+const AGES={3:['3세','곧은 선 위주로 쉽게'],4:['4세','물결·곡선까지'],5:['5세','지그재그·도형까지']};
+const nowSeason=()=>{const m=new Date().getMonth()+1;return m>=3&&m<=5?'spring':m>=6&&m<=8?'summer':m>=9&&m<=11?'autumn':'winter'};
+const CAT_THEME={animal:'animal',nature:'bug',life:'car',holiday:'winter',season:null};
+function easyPages(r,pick){
+  const E=S.easy,age=E.age,diff={3:1,4:2,5:3}[age],lv={3:[1,2],4:[2,3,4],5:[4,5,6]}[age],se=nowSeason();
+  const okAct=a=>{const A=ACTS[a];if(E.kind!=='mix'&&E.kind!==A.type)return false;if(age<5&&HARD.includes(a))return false;
+    if(E.cat==='all')return true;if(E.cat==='season')return !!(A.s&&A.s.includes(se));return A.cat===E.cat};
+  const pool=[];
+  if(E.kind==='line'||(E.kind==='mix'&&(E.cat==='all'||E.cat==='season'||CAT_THEME[E.cat])))lv.forEach(l=>pool.push({level:l}));
+  Object.keys(ACTS).forEach(a=>{if(okAct(a))pool.push({act:a})});
+  if(!pool.length)return[];
+  const th=()=>E.cat==='season'?se:CAT_THEME[E.cat]||pick();
+  let bag=[],out=[];const used=new Set();
+  for(let i=0;i<S.per;i++){if(!bag.length)bag=shuffle(pool,r);let it=bag.pop();
+    const salt=(E.salt&&E.salt[i])||0;
+    if(salt){const rr=rng(S.seed+i*104729+salt*7907);const cand=pool.filter(p=>!used.has(p.act||'L'+p.level));const src=cand.length?cand:pool;it=src[Math.floor(rr()*src.length)]}
+    used.add(it.act||'L'+it.level);
+    out.push({...it,theme:th(),seed:S.seed+i*7919+salt*131,diff,easy:1,idx:i})}
+  S.missions=age===3?1:2;
+  return out;
+}
+
 /* ---------- 화면 ---------- */
 function pages(){
   const out=[],r=rng(S.seed+11),keys=Object.keys(allThemes());let k=0;
   const pick=()=>S.mode==='rand'&&S.season&&S.season!=='all'?S.season:S.theme==='random'?keys[Math.floor(r()*keys.length)]:S.theme;
+  if(S.mode==='easy')return easyPages(r,pick);
   if(S.mode==='rand'){
     const R=S.rand,lvMax={1:2,2:4,3:6}[R.max],pool=[];
     if(R.kinds.includes('line'))for(let l=1;l<=lvMax;l++)pool.push({level:l});
@@ -1437,9 +1496,14 @@ function renderControls(){
   if(!S.rand)S.rand={kinds:['line','A','B','C'],max:2};
   $('kinds').innerHTML=[['line','✂️ 선 오리기'],['A','테마 자르기'],['B','오려 붙이기'],['C','색칠하고 오리기']].map(([k,n])=>`<button class="chip" data-k="${k}" aria-pressed="${S.rand.kinds.includes(k)}">${n}</button>`).join('');
   $('rmax').innerHTML=[[1,'쉬움만'],[2,'보통까지'],[3,'어려움까지']].map(([k,n])=>`<button class="chip" data-x="${k}" aria-pressed="${S.rand.max===k}">${n}</button>`).join('');
-  $('again').textContent=S.mode==='rand'?'🎲 다시 뽑기':'🎲 새 모양으로 바꾸기';
-  $('perLabel').textContent=S.mode==='rand'?'몇 장 뽑을까요?':S.mode==='act'?'활동마다 몇 장?':'단계마다 몇 장?';
-  if(S.mode!=='rand'&&S.per>5)S.per=5;$('per').textContent=S.per;
+  $('again').textContent=S.mode==='rand'||S.mode==='easy'?'🎲 다시 뽑기':'🎲 새 모양으로 바꾸기';
+  $('perLabel').textContent=S.mode==='easy'||S.mode==='rand'?'몇 장 뽑을까요?':S.mode==='act'?'활동마다 몇 장?':'단계마다 몇 장?';
+  if(S.mode!=='rand'&&S.mode!=='easy'&&S.per>5)S.per=5;$('per').textContent=S.per;
+  if(!S.easy)S.easy={kind:'mix',age:4,cat:'all',salt:{}};
+  $('adv').open=S.mode!=='easy'||$('adv').open;
+  $('ekind').innerHTML=Object.entries(KINDS).map(([k,v])=>`<button class="kc" data-ek="${k}" aria-pressed="${S.easy.kind===k}"><span class="ic">${v[0]}</span><b>${v[1]}</b><small>${v[2]}</small></button>`).join('');
+  $('eage').innerHTML=Object.entries(AGES).map(([k,v])=>`<button class="chip" data-ea="${k}" aria-pressed="${S.easy.age===+k}"><b>${v[0]}</b>&nbsp;<small style="color:var(--muted)">${v[1]}</small></button>`).join('');
+  $('ecat').innerHTML=[['all','전체'],['season',SEASONS[nowSeason()].i+' 지금 계절'],...Object.entries(CATS)].map(([k,n])=>`<button class="chip" data-ec="${k}" aria-pressed="${S.easy.cat===k}">${n}</button>`).join('');
   if(!S.season)S.season='all';
   $('seasons').innerHTML=[['all','🗓️ 전체'],...Object.entries(SEASONS).map(([k,v])=>[k,v.i+' '+v.n])].map(([k,n])=>`<button class="chip" data-se="${k}" aria-pressed="${S.season===k}">${n}</button>`).join('');
   $('seasonAll').hidden=S.season==='all'||S.mode!=='act';
@@ -1455,7 +1519,7 @@ function render(){
   if(!(S.theme in allThemes())&&S.theme!=='random')S.theme='animal';
   const P=pages();
   $('app').classList.toggle('bw',S.bw);
-  $('preview').innerHTML=P.length?P.map((p,i)=>`<div class="tag">${i+1}쪽 · ${p.rand?'🎲 ':''}${p.act?TYPES[ACTS[p.act].type]+' · '+ACTS[p.act].name:p.level+'단계 · '+esc(allThemes()[p.theme].name)}${p.level===6&&!allThemes()[p.theme].sil?' (그림 모양이 없는 테마라 도형으로 나와요)':''}</div><div class="sheet">${sheet(p)}</div>`).join(''):`<p class="note">${S.mode==='rand'?'뽑을 종류':S.mode==='act'?'활동':'단계'}를 하나 이상 골라 주세요.</p>`;
+  $('preview').innerHTML=P.length?P.map((p,i)=>`<div class="tag">${p.easy?`<button class="re" data-re="${p.idx}">🔄 이 장만 바꾸기</button>`:''}${i+1}쪽 · ${p.rand?'🎲 ':''}${p.act?TYPES[ACTS[p.act].type]+' · '+ACTS[p.act].name:p.level+'단계 · '+esc(allThemes()[p.theme].name)}${p.level===6&&!allThemes()[p.theme].sil?' (그림 모양이 없는 테마라 도형으로 나와요)':''}</div><div class="sheet">${sheet(p)}</div>`).join(''):`<p class="note">${S.mode==='easy'?'이 조건에 맞는 활동이 없어요. 주제를 \'전체\'로 바꿔 보세요':S.mode==='rand'?'뽑을 종류':S.mode==='act'?'활동':'단계'}를 하나 이상 골라 주세요.</p>`;
   $('count').textContent=`모두 ${P.length}장을 인쇄해요`;
   save();
 }
@@ -1466,15 +1530,19 @@ $('themes').addEventListener('click',e=>{const d=e.target.closest('[data-del]');
 $('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.mode=b.dataset.mode;renderControls();render();cheer()});
 $('acts').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;S.acts=S.acts.includes(a)?S.acts.filter(x=>x!==a):[...S.acts,a];renderControls();render()});
 $('diffs').addEventListener('click',e=>{const b=e.target.closest('[data-d]');if(!b)return;S.diff=+b.dataset.d;renderControls();render()});
+$('ekind').addEventListener('click',e=>{const b=e.target.closest('[data-ek]');if(!b)return;S.easy.kind=b.dataset.ek;S.easy.salt={};renderControls();render();cheer()});
+$('eage').addEventListener('click',e=>{const b=e.target.closest('[data-ea]');if(!b)return;S.easy.age=+b.dataset.ea;S.easy.salt={};renderControls();render()});
+$('ecat').addEventListener('click',e=>{const b=e.target.closest('[data-ec]');if(!b)return;S.easy.cat=b.dataset.ec;S.easy.salt={};renderControls();render()});
+$('preview').addEventListener('click',e=>{const b=e.target.closest('[data-re]');if(!b)return;const i=+b.dataset.re;S.easy.salt[i]=(S.easy.salt[i]||0)+1;render()});
 $('seasons').addEventListener('click',e=>{const b=e.target.closest('[data-se]');if(!b)return;S.season=b.dataset.se;renderControls();render();cheer()});
 $('seasonAll').onclick=()=>{S.acts=Object.keys(ACTS).filter(k=>ACTS[k].s&&ACTS[k].s.includes(S.season));renderControls();render()};
 $('kinds').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k,K=S.rand.kinds;S.rand.kinds=K.includes(k)?K.filter(x=>x!==k):[...K,k];renderControls();render()});
 $('rmax').addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b)return;S.rand.max=+b.dataset.x;renderControls();render()});
 $('minus').onclick=()=>{S.per=Math.max(1,S.per-1);renderControls();render()};
-$('plus').onclick=()=>{S.per=Math.min(S.mode==='rand'?12:5,S.per+1);renderControls();render()};
+$('plus').onclick=()=>{S.per=Math.min(S.mode==='rand'||S.mode==='easy'?12:5,S.per+1);renderControls();render()};
 $('missions').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;S.missions=+b.dataset.m;renderControls();render()});
 ['Story','Name','Dash','Bw'].forEach(o=>$('o'+o).addEventListener('change',e=>{S[o.toLowerCase()]=e.target.checked;render()}));
-$('again').onclick=()=>{S.seed=Math.floor(Math.random()*1e6);render();cheer()};
+$('again').onclick=()=>{S.seed=Math.floor(Math.random()*1e6);if(S.easy)S.easy.salt={};render();cheer()};
 if(window.self!==window.top)$('warn').style.display='block';
 $('print').onclick=()=>{try{window.print()}catch(e){$('warn').style.display='block'}};
 $('custom').addEventListener('submit',e=>{
