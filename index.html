@@ -134,7 +134,7 @@ summary{cursor:pointer;font-family:Jua,sans-serif;font-size:18px;min-height:32px
     <section class="box" data-modes="act rand">
       <h2><span class="n"></span>주제 <small class="note">(여러 개 가능 · 안 고르면 전체)</small></h2>
       <div class="chips" id="topics"></div>
-      <p class="note" style="margin-top:8px">고른 주제 안에서 활동이 무작위로 나와요. 마음에 안 드는 장은 미리보기의 🔄 이 장만 바꾸기!</p>
+      <p class="note" style="margin-top:8px">고른 주제 안에서 활동이 무작위로 나오고, 그림(동물·간식·악기 등)도 주제에 맞춰 자동으로 들어가요. 마음에 안 드는 장은 미리보기의 🔄 이 장만 바꾸기!</p>
     </section>
     <section class="box" data-modes="act">
       <h2><span class="n"></span>오리는 선 난이도</h2>
@@ -159,7 +159,7 @@ summary{cursor:pointer;font-family:Jua,sans-serif;font-size:18px;min-height:32px
         <span class="note" id="count"></span>
       </div>
     </section>
-    <section class="box" data-modes="line act rand">
+    <section class="box" data-modes="line">
       <h2><span class="n"></span>테마 고르기</h2>
       <p class="note" data-modes="act rand" style="margin:-4px 0 8px">손가락 인형·퍼즐·가면 그림이 테마를 따라가요.</p>
       <div class="chips" id="themes"></div>
@@ -1496,7 +1496,7 @@ function drawPages(pool,r,pick,dfn,flag){
 function pages(){
   const out=[],r=rng(S.seed+11),keys=Object.keys(allThemes());let k=0;
   const mapped=[...new Set(S.topics.flatMap(t=>TOPIC_THEME[t]||[]))];
-  const pick=()=>(S.mode!=='line'&&mapped.length&&S.theme==='random')?mapped[Math.floor(r()*mapped.length)]:S.theme==='random'?keys[Math.floor(r()*keys.length)]:S.theme;
+  const base=Object.keys(THEMES);const pick=()=>S.mode!=='line'?(mapped.length?mapped:base)[Math.floor(r()*(mapped.length||base.length))]:S.theme==='random'?keys[Math.floor(r()*keys.length)]:S.theme;
   if(S.mode==='rand'){
     const R=S.rand,lvMax={1:2,2:4,3:6}[R.max],pool=[];
     if(R.kinds.includes('line'))for(let l=1;l<=lvMax;l++)pool.push({level:l});
