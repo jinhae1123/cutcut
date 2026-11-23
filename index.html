@@ -339,62 +339,117 @@ const tr=(x,y,inner)=>`<g transform="translate(${f(x)} ${f(y)})">${inner}</g>`;
 const rr=(x,y,w,h,r)=>`M${f(x+r)} ${f(y)}H${f(x+w-r)}A${r} ${r} 0 0 1 ${f(x+w)} ${f(y+r)}V${f(y+h-r)}A${r} ${r} 0 0 1 ${f(x+w-r)} ${f(y+h)}H${f(x+r)}A${r} ${r} 0 0 1 ${f(x)} ${f(y+h-r)}V${f(y+r)}A${r} ${r} 0 0 1 ${f(x+r)} ${f(y)}Z`;
 const ell=(rx,ry)=>`M${-rx} 0A${rx} ${ry} 0 1 0 ${rx} 0A${rx} ${ry} 0 1 0 ${-rx} 0Z`;
 const hp=R=>poly(makeShape('heart',0,0,R).pts)+'Z';
+const sp=(R,k=.56,cy=0)=>{const p=[];for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?R*k:R;p.push([rr*Math.cos(a),cy+rr*Math.sin(a)])}return poly(p)+'Z'};
+const pk=(a,r)=>a[Math.floor(r()*a.length)];
+const rn=(r,a,b)=>a+r()*(b-a);
 const cutp=(d,sw=1.3)=>`<path d="${d}" fill="none" stroke="#2b2b33" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"${S.dash?' stroke-dasharray="3.2 2"':''}/>`;
+const fold=(x1,y1,x2,y2)=>`<line x1="${f(x1)}" y1="${f(y1)}" x2="${f(x2)}" y2="${f(y2)}" stroke="#9aa0a8" stroke-width=".5" stroke-dasharray="1.6 1.2"/>`;
+const lbl=(x,y,t,s=3.6)=>`<text x="${f(x)}" y="${f(y)}" font-family="Jua" font-size="${s}" text-anchor="middle" fill="#9aa0a8">${t}</text>`;
 const dot=p=>`<circle cx="${f(p[0])}" cy="${f(p[1])}" r="2.3" fill="#ee6352" stroke="#fff" stroke-width=".6"/>`;
+const G=inner=>`<g fill="none" stroke="#8a8f98" stroke-width=".55" stroke-linecap="round" stroke-linejoin="round">${inner}</g>`;
 function wav(diff,amp,cyc,u){if(diff===1)return 0;if(diff===2)return amp*Math.sin(2*Math.PI*cyc*u);const t=(u*cyc)%1;return amp*(t<.5?4*t-1:3-4*t)}
-function fringe(x0,x1,yT,yB,n,diff,cyc,colors,deco){
-  const w=(x1-x0)/n,amp=diff===1?0:w*.21,L=[];
-  for(let i=0;i<=n;i++){const p=[];for(let j=0;j<=160;j++){const u=j/160;p.push([x0+i*w+wav(diff,amp,cyc,u),yB-(yB-yT)*u])}L.push(p)}
+/* 세로 술: 아래 종이 끝(yB)에서 위(yT)까지 */
+function fringe(c,x0,x1,yT,yB,n,colors,deco){
+  const w=(x1-x0)/n,amp=c.diff===1?0:w*rn(c.r,.16,.25),cyc=rn(c.r,3,5.5),L=[];
+  for(let i=0;i<=n;i++){const p=[];for(let j=0;j<=160;j++){const u=j/160;p.push([x0+i*w+wav(c.diff,amp,cyc,u),yB-(yB-yT)*u])}L.push(p)}
   let fill='',cuts='';
   for(let i=0;i<n;i++){fill+=`<path d="${poly(L[i].concat(L[i+1].slice().reverse()))}Z" fill="${colors[i%colors.length]}"/>`;if(deco)fill+=deco(L[i],L[i+1],i)}
   L.forEach(p=>{cuts+=cutp(poly(p))+dot(p[p.length-1])});
-  return{fill,cuts};
+  return{fill,cuts,L};
 }
-const kid=(x,y,h,s)=>`<path d="M${x-31} ${y+34} L${x-31} ${y-2} A31 31 0 0 1 ${x+31} ${y-2} L${x+31} ${y+34}Z" fill="${h}"/>
-<path d="M${x-33} ${y+52} Q${x-31} ${y+27} ${x} ${y+25} Q${x+31} ${y+27} ${x+33} ${y+52}Z" fill="${s}"/>
-<circle cx="${x}" cy="${y}" r="24" fill="#ffe1cc"/>
+/* 가로 술: 왼쪽 종이 끝에서 오른쪽(xS)까지 */
+function hfringe(c,y0,y1,xS,n,colors){
+  const h=(y1-y0)/n,amp=c.diff===1?0:h*rn(c.r,.16,.24),cyc=rn(c.r,3,5),L=[];
+  for(let i=0;i<=n;i++)L.push(lineXY(4,y0+i*h,xS,y0+i*h,c.diff,amp,cyc));
+  let fill='',cuts='';
+  for(let i=0;i<n;i++)fill+=`<path d="${poly(L[i].concat(L[i+1].slice().reverse()))}Z" fill="${colors[i%colors.length]}"/>`;
+  L.forEach(p=>{cuts+=cutp(poly(p))+dot(p[p.length-1])});
+  return{fill,cuts,L};
+}
+function lineXY(x0,y0,x1,y1,diff,amp,cyc){const p=[];for(let j=0;j<=200;j++){const u=j/200,dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy),o=wav(diff,amp,cyc,u);p.push([x0+dx*u-dy/L*o,y0+dy*u+dx/L*o])}return p}
+const SKIN=['#ffe1cc','#f7d2b6','#e8b896'];
+const kid=(x,y,h,s,sk,longHair=true)=>`${longHair?`<path d="M${x-31} ${y+34} L${x-31} ${y-2} A31 31 0 0 1 ${x+31} ${y-2} L${x+31} ${y+34}Z" fill="${h}"/>`:''}
+${s?`<path d="M${x-33} ${y+52} Q${x-31} ${y+27} ${x} ${y+25} Q${x+31} ${y+27} ${x+33} ${y+52}Z" fill="${s}"/>`:''}
+<circle cx="${x}" cy="${y}" r="24" fill="${sk}"/>
 <path d="M${x-25} ${y-3} Q${x-25} ${y-28} ${x} ${y-28} Q${x+25} ${y-28} ${x+25} ${y-3} Q${x+14} ${y-12} ${x+4} ${y-9} Q${x-8} ${y-14} ${x-25} ${y-3}Z" fill="${h}"/>
 <circle cx="${x-9}" cy="${y+3}" r="2.8" fill="#2b2b33"/><circle cx="${x+9}" cy="${y+3}" r="2.8" fill="#2b2b33"/>
 <circle cx="${x-8}" cy="${y+2}" r=".9" fill="#fff"/><circle cx="${x+10}" cy="${y+2}" r=".9" fill="#fff"/>
 <ellipse cx="${x-16}" cy="${y+10}" rx="4" ry="2.6" fill="#ffadad" opacity=".85"/><ellipse cx="${x+16}" cy="${y+10}" rx="4" ry="2.6" fill="#ffadad" opacity=".85"/>
 <path d="M${x-6} ${y+11} Q${x} ${y+20} ${x+6} ${y+11}Z" fill="#e2574c"/>`;
 const fishArt=(c1,c2)=>`<path d="M-21 0 Q-21 -10 -5 -10 Q8 -10 14 -3 L25 -11 L25 11 L14 3 Q8 10 -5 10 Q-21 10 -21 0Z" fill="${c1}"/><path d="M-4 -9 Q0 0 -4 9 M4 -8 Q8 0 4 8" stroke="${c2}" stroke-width="2.4" fill="none"/><circle cx="-13" cy="-2" r="2.2" fill="#2b2b33"/><circle cx="-12.4" cy="-2.6" r=".7" fill="#fff"/>`;
+const flowerHead=(t,col,s=1)=>{const g=`<g transform="scale(${s})">`;
+  if(t===0){let p='';for(let i=0;i<8;i++){const a=i*Math.PI/4;p+=`<ellipse cx="${f(7*Math.cos(a))}" cy="${f(7*Math.sin(a))}" rx="5.2" ry="3.2" transform="rotate(${i*45} ${f(7*Math.cos(a))} ${f(7*Math.sin(a))})" fill="${col}"/>`}return g+p+`<circle r="4.6" fill="#ffc53d"/></g>`}
+  if(t===1)return g+`<path d="M-9 4 L-9 -9 L-4.5 -4 L0 -12 L4.5 -4 L9 -9 L9 4 Q0 11 -9 4Z" fill="${col}"/></g>`;
+  let p='';for(let i=0;i<5;i++){const a=-Math.PI/2+i*Math.PI*2/5;p+=`<circle cx="${f(6*Math.cos(a))}" cy="${f(6*Math.sin(a))}" r="5" fill="${col}"/>`}return g+p+`<circle r="3.6" fill="#fff3b0"/></g>`};
 
+/* ---------- 오려 붙일 그림 ---------- */
+const IT=(w,h,art,out,ob)=>({w,h,art,out:out||ell(w/2+6,h/2+6),ob:ob||h/2+6});
 const ITEMS={
-  egg:{w:42,h:36,ob:22,out:ell(26,22),art:`<path d="M-19 0 Q-21 -14 -7 -15 Q3 -20 14 -12 Q22 -4 18 8 Q13 18 -2 16 Q-17 17 -19 0Z" fill="#fff" stroke="#e3dccf" stroke-width=".6"/><circle cx="1" cy="1" r="7.5" fill="#ffc53d"/><circle cx="-1.5" cy="-1.5" r="2.2" fill="#ffe08a"/>`},
-  sausage:{w:48,h:18,ob:13,out:rr(-28,-13,56,26,13),art:`<rect x="-23" y="-8" width="46" height="16" rx="8" fill="#b9553d"/><rect x="-18" y="-6" width="30" height="2.5" rx="1.2" fill="#d97a5e"/><path d="M-14 -3 L-11 3 M-5 -3 L-2 3 M4 -3 L7 3 M13 -3 L16 3" stroke="#7d3424" stroke-width="1.2" stroke-linecap="round"/>`},
-  mushroom:{w:40,h:36,ob:21,out:'M-24 5 Q-24 -24 0 -24 Q24 -24 24 5 L12 5 L12 19 Q0 23 -12 19 L-12 5Z',art:`<rect x="-7" y="-1" width="14" height="16" rx="4" fill="#f5e6cc"/><path d="M-19 1 Q-19 -19 0 -19 Q19 -19 19 1Z" fill="#e8654f"/><circle cx="-8" cy="-9" r="3" fill="#fff"/><circle cx="6" cy="-12" r="2.4" fill="#fff"/><circle cx="10" cy="-4" r="2" fill="#fff"/>`},
-  milk:{w:28,h:46,ob:28,out:rr(-17,-27,34,55,5),art:`<path d="M-12 -10 L-7 -22 L7 -22 L12 -10Z" fill="#dcefff" stroke="#b9cfe6" stroke-width=".6"/><rect x="-12" y="-10" width="24" height="33" fill="#fff" stroke="#c9d4e0" stroke-width=".6"/><rect x="-12" y="2" width="24" height="12" fill="#5aa9e6"/><text x="0" y="10.6" font-family="Jua" font-size="5.6" text-anchor="middle" fill="#fff">우유</text>`},
-  apple:{w:38,h:40,ob:25,out:ell(25,25),art:`<path d="M0 -11 Q-16 -19 -18 -2 Q-18 16 -6 18 Q0 16 6 18 Q18 16 18 -2 Q16 -19 0 -11Z" fill="#e8453c"/><path d="M0 -11 L1 -19" stroke="#7a4a2a" stroke-width="2" stroke-linecap="round"/><path d="M2 -16 Q10 -22 14 -15 Q8 -12 2 -16Z" fill="#5bb36a"/><ellipse cx="-9" cy="-3" rx="3" ry="5" fill="#f58a80"/>`},
-  carrot:{w:26,h:48,ob:30,out:'M-14 -15 Q-14 -31 0 -31 Q14 -31 14 -15 L4 26 Q0 31 -4 26Z',art:`<path d="M-3 -14 Q-10 -26 -4 -26 Q-1 -20 0 -16 Q1 -22 6 -26 Q10 -22 3 -14Z" fill="#5bb36a"/><path d="M-9 -12 Q0 -17 9 -12 L1 22 Q0 24 -1 22Z" fill="#f39237"/><path d="M-5 -4 L0 -4 M2 4 L5 4 M-3 11 L1 11" stroke="#d26d1e" stroke-width="1" stroke-linecap="round"/>`},
-  fishO:{w:46,h:22,ob:17,out:'M-27 0 Q-27 -15 -5 -15 Q10 -15 16 -6 L31 -17 L31 17 L16 6 Q10 15 -5 15 Q-27 15 -27 0Z',art:fishArt('#ff9f43','#ffd19a')},
-  fishB:{w:46,h:22,ob:17,out:'M-27 0 Q-27 -15 -5 -15 Q10 -15 16 -6 L31 -17 L31 17 L16 6 Q10 15 -5 15 Q-27 15 -27 0Z',art:fishArt('#5aa9e6','#ffffff')},
-  weed:{w:28,h:48,ob:29,out:rr(-17,-29,34,58,10),art:`<path d="M-8 24 Q-14 12 -8 0 Q-2 -12 -8 -24 M2 24 Q8 10 2 -2 Q-4 -14 2 -22 M10 24 Q14 14 10 6" fill="none" stroke="#4caf6d" stroke-width="4.5" stroke-linecap="round"/>`},
-  berry:{w:30,h:38,ob:25,out:'M0 25 Q-21 8 -19 -8 Q-17 -24 0 -24 Q17 -24 19 -8 Q21 8 0 25Z',art:`<path d="M0 18 Q-16 6 -14 -6 Q-12 -14 0 -12 Q12 -14 14 -6 Q16 6 0 18Z" fill="#ef4d5a"/>${[[-6,-4],[4,-6],[-2,3],[7,3],[-8,6],[1,10]].map(p=>`<ellipse cx="${p[0]}" cy="${p[1]}" rx=".9" ry="1.4" fill="#ffe08a"/>`).join('')}<path d="M-9 -12 L-3 -14 L0 -19 L3 -14 L9 -12 L3 -10 L0 -8 L-3 -10Z" fill="#4caf6d"/>`},
-  candle:{w:14,h:48,ob:28,out:'M0 -30 Q9 -20 7 -13 L10 -13 L10 28 L-10 28 L-10 -13 L-7 -13 Q-9 -20 0 -30Z',art:`<rect x="-5" y="-9" width="10" height="33" rx="2" fill="#ffd1dc"/><path d="M-5 -2 L5 -6 M-5 7 L5 3 M-5 16 L5 12" stroke="#f3799a" stroke-width="2.2"/><path d="M0 -24 Q6 -16 3 -12 Q0 -10 -3 -12 Q-6 -16 0 -24Z" fill="#ffb32b"/><path d="M0 -19 Q3 -15 1 -13 Q0 -12 -1 -13 Q-3 -15 0 -19Z" fill="#fff1a8"/>`},
-  cookie:{w:36,h:32,ob:19,out:hp(21),art:`<path d="${hp(16)}" fill="#d9a066"/><path d="${hp(11.5)}" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="2 1.6"/>${[[-6,-6,'#ee6352'],[5,-4,'#3fa7d6'],[-1,4,'#ffd23f'],[7,5,'#5bb36a']].map(p=>`<rect x="${p[0]}" y="${p[1]}" width="3.4" height="1.4" rx=".7" fill="${p[2]}" transform="rotate(35 ${p[0]} ${p[1]})"/>`).join('')}`}
+  egg:IT(42,36,`<path d="M-19 0 Q-21 -14 -7 -15 Q3 -20 14 -12 Q22 -4 18 8 Q13 18 -2 16 Q-17 17 -19 0Z" fill="#fff" stroke="#e3dccf" stroke-width=".6"/><circle cx="1" cy="1" r="7.5" fill="#ffc53d"/><circle cx="-1.5" cy="-1.5" r="2.2" fill="#ffe08a"/>`,ell(26,22),22),
+  sausage:IT(48,18,`<rect x="-23" y="-8" width="46" height="16" rx="8" fill="#b9553d"/><rect x="-18" y="-6" width="30" height="2.5" rx="1.2" fill="#d97a5e"/><path d="M-14 -3 L-11 3 M-5 -3 L-2 3 M4 -3 L7 3 M13 -3 L16 3" stroke="#7d3424" stroke-width="1.2" stroke-linecap="round"/>`,rr(-28,-13,56,26,13),13),
+  mushroom:IT(40,36,`<rect x="-7" y="-1" width="14" height="16" rx="4" fill="#f5e6cc"/><path d="M-19 1 Q-19 -19 0 -19 Q19 -19 19 1Z" fill="#e8654f"/><circle cx="-8" cy="-9" r="3" fill="#fff"/><circle cx="6" cy="-12" r="2.4" fill="#fff"/><circle cx="10" cy="-4" r="2" fill="#fff"/>`,'M-24 5 Q-24 -24 0 -24 Q24 -24 24 5 L12 5 L12 19 Q0 23 -12 19 L-12 5Z',21),
+  tomato:IT(32,32,`<circle r="15" fill="#e8453c"/><circle r="12" fill="#f26b5b"/>${[0,72,144,216,288].map(a=>{const t=a*Math.PI/180;return `<ellipse cx="${f(6.5*Math.cos(t))}" cy="${f(6.5*Math.sin(t))}" rx="2.6" ry="1.5" transform="rotate(${a} ${f(6.5*Math.cos(t))} ${f(6.5*Math.sin(t))})" fill="#ffd9a0"/>`}).join('')}<circle r="2.4" fill="#f9a08f"/>`,ell(20,20),20),
+  bacon:IT(46,18,`<path d="M-22 -6 Q-11 -12 0 -6 T22 -6 L22 4 Q11 -2 0 4 T-22 4Z" fill="#d9614c"/><path d="M-21 -1 Q-11 -7 0 -1 T21 -1" fill="none" stroke="#f7c9b8" stroke-width="2"/>`,rr(-27,-14,54,26,10),12),
+  milk:IT(28,46,`<path d="M-12 -10 L-7 -22 L7 -22 L12 -10Z" fill="#dcefff" stroke="#b9cfe6" stroke-width=".6"/><rect x="-12" y="-10" width="24" height="33" fill="#fff" stroke="#c9d4e0" stroke-width=".6"/><rect x="-12" y="2" width="24" height="12" fill="#5aa9e6"/><text x="0" y="10.6" font-family="Jua" font-size="5.6" text-anchor="middle" fill="#fff">우유</text>`,rr(-17,-27,34,55,5),28),
+  apple:IT(38,40,`<path d="M0 -11 Q-16 -19 -18 -2 Q-18 16 -6 18 Q0 16 6 18 Q18 16 18 -2 Q16 -19 0 -11Z" fill="#e8453c"/><path d="M0 -11 L1 -19" stroke="#7a4a2a" stroke-width="2" stroke-linecap="round"/><path d="M2 -16 Q10 -22 14 -15 Q8 -12 2 -16Z" fill="#5bb36a"/><ellipse cx="-9" cy="-3" rx="3" ry="5" fill="#f58a80"/>`,ell(25,25),25),
+  carrot:IT(26,48,`<path d="M-3 -14 Q-10 -26 -4 -26 Q-1 -20 0 -16 Q1 -22 6 -26 Q10 -22 3 -14Z" fill="#5bb36a"/><path d="M-9 -12 Q0 -17 9 -12 L1 22 Q0 24 -1 22Z" fill="#f39237"/><path d="M-5 -4 L0 -4 M2 4 L5 4 M-3 11 L1 11" stroke="#d26d1e" stroke-width="1" stroke-linecap="round"/>`,'M-14 -15 Q-14 -31 0 -31 Q14 -31 14 -15 L4 26 Q0 31 -4 26Z',30),
+  banana:IT(46,26,`<path d="M-20 -8 Q0 18 22 -10 Q23 -4 20 -1 Q0 22 -22 -4Z" fill="#ffd23f" stroke="#e0a800" stroke-width=".6"/><circle cx="-21" cy="-6" r="1.6" fill="#7a4a2a"/><circle cx="22" cy="-8" r="1.6" fill="#7a4a2a"/>`,ell(28,19),19),
+  bread:IT(40,40,`<path d="M-16 18 L-16 -4 Q-22 -6 -20 -14 Q-16 -22 0 -22 Q16 -22 20 -14 Q22 -6 16 -4 L16 18Z" fill="#d9944a"/><path d="M-12 15 L-12 -6 Q-17 -8 -15 -13 Q-12 -18 0 -18 Q12 -18 15 -13 Q17 -8 12 -6 L12 15Z" fill="#fbe3b6"/>`,ell(26,27),27),
+  cheese:IT(40,30,`<path d="M-19 12 L-19 -2 L16 -14 L19 -2 L19 12Z" fill="#ffd54f"/><path d="M-19 -2 L16 -14 L19 -2Z" fill="#ffe58a"/><circle cx="-8" cy="5" r="3" fill="#f2b600"/><circle cx="7" cy="7" r="2.2" fill="#f2b600"/><circle cx="12" cy="1" r="1.6" fill="#f2b600"/>`),
+  fishO:IT(46,22,fishArt('#ff9f43','#ffd19a'),'M-27 0 Q-27 -15 -5 -15 Q10 -15 16 -6 L31 -17 L31 17 L16 6 Q10 15 -5 15 Q-27 15 -27 0Z',17),
+  fishB:IT(46,22,fishArt('#5aa9e6','#ffffff'),'M-27 0 Q-27 -15 -5 -15 Q10 -15 16 -6 L31 -17 L31 17 L16 6 Q10 15 -5 15 Q-27 15 -27 0Z',17),
+  fishP:IT(46,22,fishArt('#ff8fa3','#fff1f4'),'M-27 0 Q-27 -15 -5 -15 Q10 -15 16 -6 L31 -17 L31 17 L16 6 Q10 15 -5 15 Q-27 15 -27 0Z',17),
+  weed:IT(28,48,`<path d="M-8 24 Q-14 12 -8 0 Q-2 -12 -8 -24 M2 24 Q8 10 2 -2 Q-4 -14 2 -22 M10 24 Q14 14 10 6" fill="none" stroke="#4caf6d" stroke-width="4.5" stroke-linecap="round"/>`,rr(-17,-29,34,58,10),29),
+  starfish:IT(36,36,`<path d="${sp(18,.5)}" fill="#ffa36c" stroke="#f08a4b" stroke-width=".8" stroke-linejoin="round"/>${[[0,-8],[7,-2],[4,7],[-4,7],[-7,-2],[0,0]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="1.2" fill="#fff3e6"/>`).join('')}`,sp(24,.6),20),
+  clam:IT(32,30,`<g transform="scale(.36) translate(-50 -52)"><path d="${SIL.shell.d}" fill="#ffc9b0" stroke="#e79b7e" stroke-width="2.5"/><path d="M50 82 L32 38 M50 82 L50 28 M50 82 L68 38" stroke="#e79b7e" stroke-width="2.5"/></g>`),
+  berry:IT(30,38,`<path d="M0 18 Q-16 6 -14 -6 Q-12 -14 0 -12 Q12 -14 14 -6 Q16 6 0 18Z" fill="#ef4d5a"/>${[[-6,-4],[4,-6],[-2,3],[7,3],[-8,6],[1,10]].map(p=>`<ellipse cx="${p[0]}" cy="${p[1]}" rx=".9" ry="1.4" fill="#ffe08a"/>`).join('')}<path d="M-9 -12 L-3 -14 L0 -19 L3 -14 L9 -12 L3 -10 L0 -8 L-3 -10Z" fill="#4caf6d"/>`,'M0 25 Q-21 8 -19 -8 Q-17 -24 0 -24 Q17 -24 19 -8 Q21 8 0 25Z',25),
+  candle:IT(14,48,`<rect x="-5" y="-9" width="10" height="33" rx="2" fill="#ffd1dc"/><path d="M-5 -2 L5 -6 M-5 7 L5 3 M-5 16 L5 12" stroke="#f3799a" stroke-width="2.2"/><path d="M0 -24 Q6 -16 3 -12 Q0 -10 -3 -12 Q-6 -16 0 -24Z" fill="#ffb32b"/><path d="M0 -19 Q3 -15 1 -13 Q0 -12 -1 -13 Q-3 -15 0 -19Z" fill="#fff1a8"/>`,'M0 -30 Q9 -20 7 -13 L10 -13 L10 28 L-10 28 L-10 -13 L-7 -13 Q-9 -20 0 -30Z',28),
+  cookie:IT(36,32,`<path d="${hp(16)}" fill="#d9a066"/><path d="${hp(11.5)}" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="2 1.6"/>${[[-6,-6,'#ee6352'],[5,-4,'#3fa7d6'],[-1,4,'#ffd23f'],[7,5,'#5bb36a']].map(p=>`<rect x="${p[0]}" y="${p[1]}" width="3.4" height="1.4" rx=".7" fill="${p[2]}" transform="rotate(35 ${p[0]} ${p[1]})"/>`).join('')}`,hp(21),19),
+  cherry:IT(34,40,`<path d="M-8 6 Q-4 -10 2 -18 M8 8 Q6 -8 2 -18" fill="none" stroke="#5a8f3c" stroke-width="1.6" stroke-linecap="round"/><path d="M2 -18 Q12 -22 14 -14 Q8 -12 2 -18Z" fill="#5bb36a"/><circle cx="-8" cy="10" r="7.5" fill="#d7263d"/><circle cx="8" cy="12" r="7.5" fill="#d7263d"/><circle cx="-10" cy="8" r="2" fill="#f27b8b"/><circle cx="6" cy="10" r="2" fill="#f27b8b"/>`),
+  pepperoni:IT(28,28,`<circle r="13" fill="#c8432f"/><circle r="11" fill="#d9573f"/>${[[-4,-4],[5,-2],[-2,5],[4,6],[-6,2]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="1.6" fill="#a8321f"/>`).join('')}`,ell(19,19),19),
+  olive:IT(24,24,`<circle r="8" fill="none" stroke="#3d3d3d" stroke-width="5"/><circle cx="-3" cy="-5" r="1.4" fill="#8a8a8a"/>`,ell(17,17),17),
+  pepper:IT(30,26,`<path d="M-12 0 Q-12 -10 -2 -10 Q4 -12 10 -8 Q14 -2 12 5 Q8 12 -2 10 Q-12 10 -12 0Z" fill="none" stroke="#4caf50" stroke-width="4" stroke-linejoin="round"/>`),
+  tulip:IT(30,50,`<path d="M0 24 V-4" stroke="#4caf6d" stroke-width="2.6" stroke-linecap="round"/><path d="M0 14 Q-12 8 -12 -2 Q-2 4 0 14Z" fill="#5bb36a"/>${tr(0,-12,flowerHead(1,'#ff6b8a',1.15))}`),
+  daisy:IT(34,52,`<path d="M0 26 V-2" stroke="#4caf6d" stroke-width="2.6" stroke-linecap="round"/><path d="M0 16 Q12 10 12 0 Q2 6 0 16Z" fill="#5bb36a"/>${tr(0,-12,flowerHead(0,'#fff',1.25))}<circle cx="0" cy="-12" r="13" fill="none" stroke="#e1e1e1" stroke-width=".5"/>`),
+  sunflower:IT(38,52,`<path d="M0 26 V-2" stroke="#4caf6d" stroke-width="3" stroke-linecap="round"/><path d="M0 14 Q-13 9 -13 -1 Q-2 5 0 14Z" fill="#5bb36a"/>${[...Array(12)].map((_,i)=>{const a=i*30;return `<ellipse cx="0" cy="-22" rx="3.4" ry="6" transform="rotate(${a} 0 -12)" fill="#ffc93c"/>`}).join('')}<circle cx="0" cy="-12" r="6.5" fill="#8b5a2b"/>`),
+  bloom:IT(34,52,`<path d="M0 26 V-2" stroke="#4caf6d" stroke-width="2.6" stroke-linecap="round"/><path d="M0 18 Q-12 12 -12 2 Q-2 8 0 18Z M0 10 Q12 4 12 -6 Q2 0 0 10Z" fill="#5bb36a"/>${tr(0,-12,flowerHead(2,'#b78cf2',1.3))}`),
+  tstar:IT(38,38,`<path d="${sp(18,.5,1)}" fill="#ffd23f" stroke="#e8b400" stroke-width=".8" stroke-linejoin="round"/><path d="M-4 -6 L0 -14 L2 -8Z" fill="#fff3a6"/>`,sp(25,.6,1),22),
+  ballR:IT(30,38,`<circle cy="4" r="14" fill="#e8453c"/><path d="M-13 2 Q-6 -3 0 2 T13 2" fill="none" stroke="#fff" stroke-width="2"/><rect x="-4" y="-14" width="8" height="5" rx="1" fill="#d4af37"/><circle cy="-16" r="2.6" fill="none" stroke="#d4af37" stroke-width="1.2"/><circle cx="-5" cy="-1" r="2.4" fill="#f58a80"/>`),
+  ballB:IT(30,38,`<circle cy="4" r="14" fill="#3f8fd6"/>${[[-6,8],[0,2],[6,8],[-4,12],[5,-2],[-7,-1]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="1.6" fill="#fff"/>`).join('')}<rect x="-4" y="-14" width="8" height="5" rx="1" fill="#d4af37"/><circle cy="-16" r="2.6" fill="none" stroke="#d4af37" stroke-width="1.2"/>`),
+  cane:IT(26,46,`<path d="M5 22 L5 -8 A8 8 0 0 0 -11 -8" fill="none" stroke="#ee6352" stroke-width="7" stroke-linecap="round"/><path d="M5 22 L5 -8 A8 8 0 0 0 -11 -8" fill="none" stroke="#fff" stroke-width="7" stroke-dasharray="3 3"/>`),
+  bell:IT(34,40,`<path d="M-14 12 Q-14 -12 0 -14 Q14 -12 14 12 L17 15 L-17 15Z" fill="#ffcf3a"/><circle cy="17" r="3.5" fill="#d4a017"/><path d="M0 -14 L-8 -20 L-8 -12Z M0 -14 L8 -20 L8 -12Z" fill="#e8453c"/><path d="M-8 -2 Q-6 -10 -2 -11" fill="none" stroke="#fff3a6" stroke-width="2" stroke-linecap="round"/>`),
+  gift:IT(34,40,`<rect x="-14" y="-6" width="28" height="24" rx="2" fill="#5aa9e6"/><rect x="-16" y="-11" width="32" height="7" rx="1.5" fill="#7fc0f0"/><rect x="-2.5" y="-11" width="5" height="29" fill="#ffd23f"/><path d="M0 -11 Q-10 -22 -12 -14 Q-10 -10 0 -11 Q10 -10 12 -14 Q10 -22 0 -11Z" fill="#ffd23f"/>`),
+  riceball:IT(36,36,`<path d="M0 -17 Q5 -17 15 4 Q20 15 10 16 L-10 16 Q-20 15 -15 4 Q-5 -17 0 -17Z" fill="#fff" stroke="#d9d9d9" stroke-width=".8"/><rect x="-8" y="4" width="16" height="12" fill="#2f4a3a"/>${[[-6,-4],[3,-8],[6,0],[-2,-1]].map(p=>`<ellipse cx="${p[0]}" cy="${p[1]}" rx=".8" ry="1.3" fill="#e9dcc2"/>`).join('')}`),
+  eggroll:IT(40,24,`<rect x="-19" y="-11" width="38" height="22" rx="6" fill="#ffd75e"/><path d="M-12 -11 V11 M-4 -11 V11 M4 -11 V11 M12 -11 V11" stroke="#f0b429" stroke-width="1.2"/><path d="M-16 -4 H16" stroke="#7cc47f" stroke-width="1" stroke-dasharray="2 2"/>`,rr(-25,-17,50,34,10),17),
+  ptomato:IT(24,26,`<circle cy="2" r="10" fill="#ef4d5a"/><path d="M0 -8 L-5 -11 L-2 -7 L-6 -4 L0 -6 L6 -4 L2 -7 L5 -11Z" fill="#4caf6d"/><circle cx="-4" cy="-1" r="2.2" fill="#f78a93"/>`),
+  broccoli:IT(32,38,`<path d="M-4 18 L-3 2 L3 2 L4 18Z" fill="#9bcf72"/>${[[-8,-6,7],[0,-11,8],[8,-6,7],[-3,0,6],[5,0,6]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="${p[2]}" fill="#3f9b4f"/>`).join('')}${[[-9,-8],[1,-13],[7,-7]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="2" fill="#62b86a"/>`).join('')}`),
+  octos:IT(30,34,`<path d="M-12 2 Q-12 -15 0 -15 Q12 -15 12 2Z" fill="#e8553f"/><path d="M-12 2 L-12 14 Q-10 17 -8 13 L-6 4 L-4 15 Q-2 18 0 14 L0 4 L2 15 Q4 18 6 14 L6 4 L8 13 Q10 17 12 14 L12 2Z" fill="#e8553f"/><circle cx="-4" cy="-5" r="1.6" fill="#2b2b33"/><circle cx="4" cy="-5" r="1.6" fill="#2b2b33"/><ellipse cx="0" cy="-1" rx="2" ry="1.4" fill="#ff9b8a"/>`)
 };
 const spot=(k,x,y)=>tr(x,y,`<path d="${ITEMS[k].out}" fill="#fff" fill-opacity=".65" stroke="#8a8f98" stroke-width=".5" stroke-dasharray="1.6 1.2"/><text y="1.5" font-family="Jua" font-size="4" text-anchor="middle" fill="#9aa0a8">풀칠</text>`);
 function tray(keys,c,tip){
   let s=`<line x1="10" y1="203" x2="200" y2="203" stroke="#e3e3e3" stroke-width=".4"/><text x="105" y="211" font-family="Jua" font-size="4.4" text-anchor="middle" fill="#555">✂ ${esc(tip)}</text>`;
-  keys.forEach((k,i)=>{const it=ITEMS[k],cx=[40,105,170][i],cy=246,easy=c.diff===1;
+  keys.forEach((k,i)=>{const it=ITEMS[k],cx=[40,105,170][i],cy=247,easy=c.diff===1;
     const out=easy?rr(-(it.w/2+5),-(it.h/2+5),it.w+10,it.h+10,7):it.out,ob=easy?it.h/2+5:it.ob;
-    s+=tr(cx,cy,it.art+cutp(out))+cutp(`M${cx} ${cy+ob} V297`)+emo(cx-6,289,5.5,'✂️')});
+    s+=tr(cx,cy,it.art+cutp(out))+cutp(`M${cx} ${f(cy+ob)} V297`)+emo(cx-6,289,5.5,'✂️')});
   return s;
 }
+/* 장면 + 슬롯 3개 + 재료 풀에서 무작위 3개 */
+function pasteScene(c,scene,slots,pool,tip){const keys=shuffle(pool,c.r).slice(0,3);return scene+keys.map((k,i)=>spot(k,slots[i][0],slots[i][1])).join('')+tray(keys,c,tip)}
 function silColor(key,tx,ty,k,sw=1.1){
   const s=SIL[key];
   return `<g transform="translate(${f(tx)} ${f(ty)}) scale(${k})"><g fill="none" stroke="#8a8f98" stroke-width="${f(.55/k)}" stroke-linecap="round" stroke-linejoin="round">${s.x}</g><path d="${s.d}" fill="none" stroke="#2b2b33" stroke-width="${f(sw/k)}" stroke-linejoin="round" stroke-linecap="round"${S.dash?` stroke-dasharray="${f(3.2/k)} ${f(2/k)}"`:''}/></g>`;
 }
-function lineXY(x0,y0,x1,y1,diff,amp,cyc){const p=[];for(let j=0;j<=200;j++){const u=j/200,dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy),o=wav(diff,amp,cyc,u);p.push([x0+dx*u-dy/L*o,y0+dy*u+dx/L*o])}return p}
 
-/* 테마 자르기 */
+/* ===== 테마 자르기 ===== */
 function actNoodle(c){
-  const fr=fringe(48,162,150,295,6,c.diff,4.5,['#fff1b8','#ffe69a'],(a,b)=>`<path d="${poly(a.map((p,i)=>[(p[0]+b[i][0])/2,p[1]]).filter((_,i)=>i%2===0))}" fill="none" stroke="#f0c75e" stroke-width=".5"/>`);
-  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="#ffe3cf"/>
-  ${kid(105,98,'#4a3328','#f28c6b')}
-  <path d="M18 236 Q105 224 192 236 L180 300 L30 300Z" fill="#e9e4f5"/>
-  <ellipse cx="105" cy="236" rx="87" ry="12" fill="#f7f4fc" stroke="#d3cbe8" stroke-width=".8"/>
+  const pal=pk([['#fff1b8','#ffe69a'],['#fffaf0','#f1e6cf'],['#dff3c8','#c8e9a8'],['#ffe0c2','#ffcf9e']],c.r);
+  const n=5+Math.floor(c.r()*3);
+  const fr=fringe(c,48,162,150,295,n,pal,(a,b)=>`<path d="${poly(a.map((p,i)=>[(p[0]+b[i][0])/2,p[1]]).filter((_,i)=>i%2===0))}" fill="none" stroke="#000" stroke-opacity=".08" stroke-width=".5"/>`);
+  const bowl=pk(['#e9e4f5','#dcefff','#ffe3e3','#e2f4e4'],c.r);
+  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="${pk(['#ffe3cf','#fff3c9','#e7f3ff','#f6e9ff'],c.r)}"/>
+  ${kid(105,98,pk(['#4a3328','#2b2b33','#8b5a2b','#c0763a'],c.r),pk(['#f28c6b','#7cc6a8','#7fb3e6','#f2b84b'],c.r),pk(SKIN,c.r))}
+  <path d="M18 236 Q105 224 192 236 L180 300 L30 300Z" fill="${bowl}"/>
+  <ellipse cx="105" cy="236" rx="87" ry="12" fill="#fff" fill-opacity=".7" stroke="#000" stroke-opacity=".12" stroke-width=".8"/>
   <path d="M26 233 Q34 216 48 224 Q40 236 26 233Z M164 229 Q176 214 188 224 Q178 234 164 229Z" fill="#7cc47f"/>
   <ellipse cx="176" cy="252" rx="10" ry="5.5" fill="#f4a6a6"/><ellipse cx="33" cy="254" rx="10" ry="5.5" fill="#f4a6a6"/>
   ${fr.fill}
@@ -402,156 +457,308 @@ function actNoodle(c){
   ${fr.cuts}${emo(40,288,6,'✂️')}`;
 }
 function actOcto(c){
-  const fr=fringe(54,156,152,295,6,c.diff,4,['#f5867a','#ef7468'],(a,b)=>{let s='';for(let j=18;j<160;j+=22){s+=`<circle cx="${f((a[j][0]+b[j][0])/2)}" cy="${f(a[j][1])}" r="2.6" fill="#ffd3cc"/>`}return s});
-  const bub=[[24,90,4],[30,120,2.5],[182,80,3.5],[176,140,2.5],[186,200,4],[22,190,3]].map(b=>`<circle cx="${b[0]}" cy="${b[1]}" r="${b[2]}" fill="none" stroke="#fff" stroke-width="1"/>`).join('');
-  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="#d9f0fa"/>${bub}
+  const col=pk([['#f5867a','#ef7468','#ffaa9f'],['#b48ef0','#a37ae8','#d2b8ff'],['#ffa552','#f79438','#ffc78f'],['#ff8fb8','#f77aa7','#ffc0d6']],c.r);
+  const n=5+Math.floor(c.r()*3);
+  const fr=fringe(c,54,156,152,295,n,[col[0],col[1]],(a,b)=>{let s='';for(let j=18;j<160;j+=22)s+=`<circle cx="${f((a[j][0]+b[j][0])/2)}" cy="${f(a[j][1])}" r="2.4" fill="#fff" fill-opacity=".55"/>`;return s});
+  const bub=[...Array(7)].map(()=>`<circle cx="${f(pk([rn(c.r,16,40),rn(c.r,170,194)],c.r))}" cy="${f(rn(c.r,70,230))}" r="${f(rn(c.r,2,4.5))}" fill="none" stroke="#fff" stroke-width="1"/>`).join('');
+  const sp3=[...Array(4)].map(()=>`<circle cx="${f(rn(c.r,66,144))}" cy="${f(rn(c.r,78,100))}" r="${f(rn(c.r,2.5,5.5))}" fill="${col[2]}"/>`).join('');
+  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="${pk(['#d9f0fa','#e2f5f0','#e6ecff'],c.r)}"/>${bub}
   <path d="M22 300 Q14 270 24 245 Q32 222 22 200 M36 300 Q44 276 36 255" fill="none" stroke="#5bb36a" stroke-width="5" stroke-linecap="round"/>
   <path d="M186 300 Q196 272 186 248 Q178 228 188 210" fill="none" stroke="#5bb36a" stroke-width="5" stroke-linecap="round"/>
   ${fr.fill}
-  <path d="M46 152 Q44 66 105 64 Q166 66 164 152Z" fill="#f5867a"/>
-  <circle cx="78" cy="92" r="5.5" fill="#ffaa9f"/><circle cx="130" cy="84" r="4" fill="#ffaa9f"/><circle cx="142" cy="106" r="3" fill="#ffaa9f"/>
+  <path d="M46 152 Q44 66 105 64 Q166 66 164 152Z" fill="${col[0]}"/>${sp3}
   <ellipse cx="88" cy="118" rx="9" ry="11" fill="#fff"/><ellipse cx="122" cy="118" rx="9" ry="11" fill="#fff"/>
   <circle cx="90" cy="121" r="5" fill="#2b2b33"/><circle cx="124" cy="121" r="5" fill="#2b2b33"/><circle cx="91.5" cy="119" r="1.5" fill="#fff"/><circle cx="125.5" cy="119" r="1.5" fill="#fff"/>
-  <ellipse cx="74" cy="136" rx="6" ry="3.5" fill="#ff9d93"/><ellipse cx="136" cy="136" rx="6" ry="3.5" fill="#ff9d93"/>
-  <path d="M96 137 Q105 145 114 137" fill="none" stroke="#9b3b33" stroke-width="1.5" stroke-linecap="round"/>
+  <ellipse cx="74" cy="136" rx="6" ry="3.5" fill="#fff" fill-opacity=".45"/><ellipse cx="136" cy="136" rx="6" ry="3.5" fill="#fff" fill-opacity=".45"/>
+  ${pk(['<path d="M96 137 Q105 145 114 137" fill="none" stroke="#5b2a26" stroke-width="1.5" stroke-linecap="round"/>','<ellipse cx="105" cy="140" rx="4" ry="3" fill="#5b2a26"/>','<path d="M98 137 Q105 141 112 137 M112 137 L116 135" fill="none" stroke="#5b2a26" stroke-width="1.5" stroke-linecap="round"/>'],c.r)}
   ${fr.cuts}${emo(46,288,6,'✂️')}`;
 }
 function actRain(c){
-  const fr=fringe(32,178,126,295,7,c.diff,4,['#d3e9ff','#e8f3ff'],(a,b,i)=>{let s='';for(let j=(i%2?34:14);j<156;j+=36){const x=(a[j][0]+b[j][0])/2,y=a[j][1];s+=`<path d="M${f(x)} ${f(y-5)} Q${f(x+4)} ${f(y+1)} ${f(x)} ${f(y+3)} Q${f(x-4)} ${f(y+1)} ${f(x)} ${f(y-5)}Z" fill="#6aaef0"/>`}return s});
+  const pal=pk([['#d3e9ff','#e8f3ff','#6aaef0'],['#d8f3ec','#ebfaf5','#4fb9a0'],['#e6dcff','#f2edff','#9478e6']],c.r),n=6+Math.floor(c.r()*3);
+  const fr=fringe(c,32,178,126,295,n,[pal[0],pal[1]],(a,b,i)=>{let s='';for(let j=(i%2?34:14);j<156;j+=36){const x=(a[j][0]+b[j][0])/2,y=a[j][1];s+=`<path d="M${f(x)} ${f(y-5)} Q${f(x+4)} ${f(y+1)} ${f(x)} ${f(y+3)} Q${f(x-4)} ${f(y+1)} ${f(x)} ${f(y-5)}Z" fill="${pal[2]}"/>`}return s});
   const cl=[[66,104,22],[100,88,30],[136,98,25],[158,114,16],[50,116,15]];
-  const shapes=w=>cl.map(q=>`<circle cx="${q[0]}" cy="${q[1]}" r="${q[2]}"/>`).join('')+`<rect x="38" y="106" width="134" height="22" rx="11"/>`;
-  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="#f1f7ff"/>
-  <g fill="none" stroke-width="5" stroke-linecap="round">${['#ff8a80','#ffd23f','#7ed491','#7fbfe6'].map((col,i)=>`<path d="M${18+i*5} 150 A${46-i*5} ${46-i*5} 0 0 1 ${110-i*5} 150" stroke="${col}"/>`).join('')}</g>
+  const shapes=()=>cl.map(q=>`<circle cx="${q[0]}" cy="${q[1]}" r="${q[2]}"/>`).join('')+`<rect x="38" y="106" width="134" height="22" rx="11"/>`;
+  const face=pk(['<path d="M86 104 Q90 100 94 104 M108 104 Q112 100 116 104" fill="none" stroke="#2b2b33" stroke-width="1.4" stroke-linecap="round"/><path d="M97 111 Q101 115 105 111" fill="none" stroke="#2b2b33" stroke-width="1.3" stroke-linecap="round"/>',
+    '<circle cx="90" cy="104" r="2.6" fill="#2b2b33"/><circle cx="112" cy="104" r="2.6" fill="#2b2b33"/><ellipse cx="101" cy="113" rx="3" ry="2.4" fill="#2b2b33"/>',
+    '<path d="M86 105 H94 M108 105 H116" stroke="#2b2b33" stroke-width="1.4" stroke-linecap="round"/><path d="M96 112 Q101 109 106 112" fill="none" stroke="#2b2b33" stroke-width="1.3" stroke-linecap="round"/>'],c.r);
+  const rb=c.r()<.6?`<g fill="none" stroke-width="5" stroke-linecap="round">${['#ff8a80','#ffd23f','#7ed491','#7fbfe6'].map((col,i)=>`<path d="M${18+i*5} 150 A${46-i*5} ${46-i*5} 0 0 1 ${110-i*5} 150" stroke="${col}"/>`).join('')}</g>`:`<circle cx="176" cy="78" r="11" fill="#ffd23f"/>`;
+  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="#f4f8fd"/>${rb}
   ${fr.fill}
-  <g fill="#fff" stroke="#b8cbe4" stroke-width="2.4">${shapes()}</g><g fill="#fff">${shapes()}</g>
-  <path d="M86 104 Q90 100 94 104 M108 104 Q112 100 116 104" fill="none" stroke="#2b2b33" stroke-width="1.4" stroke-linecap="round"/>
+  <g fill="#fff" stroke="#b8cbe4" stroke-width="2.4">${shapes()}</g><g fill="#fff">${shapes()}</g>${face}
   <ellipse cx="82" cy="111" rx="4" ry="2.4" fill="#ffc2c2"/><ellipse cx="120" cy="111" rx="4" ry="2.4" fill="#ffc2c2"/>
-  <path d="M97 111 Q101 115 105 111" fill="none" stroke="#2b2b33" stroke-width="1.3" stroke-linecap="round"/>
   ${fr.cuts}${emo(26,288,6,'✂️')}`;
 }
 function actWave(c){
-  const ys=[166,198,230,262],amp=c.diff===1?0:6,L=ys.map(y=>lineXY(4,y,190,y,c.diff,amp,3.5));
-  const cols=['#a6dcf6','#7fc8ef','#5cb3e4','#3f9bd2'];
+  const th=pk([{sky:'#eaf7ff',sun:'#ffd23f',sea:['#a6dcf6','#7fc8ef','#5cb3e4','#3f9bd2']},{sky:'#fff0e3',sun:'#ff8a5b',sea:['#ffc7a8','#9fc9e8','#6aa8d8','#4a86c2']},{sky:'#eefaf4',sun:'#ffd23f',sea:['#a8e6d8','#7dd3c2','#55bba8','#3a9e8c']}],c.r);
+  const ys=[166,198,230,262],amp=c.diff===1?0:rn(c.r,5,8),cyc=rn(c.r,2.5,4.5),L=ys.map(y=>lineXY(4,y,190,y,c.diff,amp,cyc));
   const band=(p,col)=>`<path d="M-2 ${f(p[0][1])} ${poly(p).replace('M','L')} L212 ${f(p[p.length-1][1])} L212 300 L-2 300Z" fill="${col}"/>`;
-  const fish=(x,y,c1,s)=>tr(x,y,`<g transform="scale(${s})">${fishArt(c1,'#fff')}</g>`);
-  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="#eaf7ff"/>
-  <circle cx="172" cy="86" r="12" fill="#ffd23f"/><g stroke="#ffd23f" stroke-width="2" stroke-linecap="round">${[0,45,90,135,180,225,270,315].map(a=>{const t=a*Math.PI/180;return `<line x1="${f(172+17*Math.cos(t))}" y1="${f(86+17*Math.sin(t))}" x2="${f(172+22*Math.cos(t))}" y2="${f(86+22*Math.sin(t))}"/>`}).join('')}</g>
+  const fishes=ys.map((y,i)=>tr(rn(c.r,30,170),y+18,`<g transform="scale(${f(rn(c.r,.5,.75))}) scale(${c.r()<.5?-1:1} 1)">${fishArt(pk(['#ff9f43','#ffd23f','#ff8fa3','#ffffff','#b48ef0'],c.r),'#fff')}</g>`)).join('');
+  const hull=pk(['#c0573f','#3f7fc0','#e8a33c','#5a9e5a'],c.r),sail=pk(['#ee6352','#3fa7d6','#ffd23f','#b48ef0'],c.r),bx=rn(c.r,-30,30);
+  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="${th.sky}"/>
+  <circle cx="172" cy="86" r="12" fill="${th.sun}"/><g stroke="${th.sun}" stroke-width="2" stroke-linecap="round">${[0,45,90,135,180,225,270,315].map(a=>{const t=a*Math.PI/180;return `<line x1="${f(172+17*Math.cos(t))}" y1="${f(86+17*Math.sin(t))}" x2="${f(172+22*Math.cos(t))}" y2="${f(86+22*Math.sin(t))}"/>`}).join('')}</g>
   <path d="M34 96 q5 -5 10 0 q5 -5 10 0 M58 84 q4 -4 8 0 q4 -4 8 0" fill="none" stroke="#5d6270" stroke-width="1.2" stroke-linecap="round"/>
-  <line x1="105" y1="100" x2="105" y2="152" stroke="#8b5e3c" stroke-width="2.2"/>
-  <path d="M108 102 L108 146 L142 146Z" fill="#fff" stroke="#d5dde6" stroke-width=".6"/><path d="M102 108 L102 146 L78 146Z" fill="#ee6352"/>
-  <path d="M105 100 L116 103 L105 106Z" fill="#ffd23f"/>
-  <path d="M68 150 L142 150 L130 168 L80 168Z" fill="#c0573f"/><circle cx="92" cy="158" r="2.6" fill="#fff"/><circle cx="105" cy="158" r="2.6" fill="#fff"/><circle cx="118" cy="158" r="2.6" fill="#fff"/>
-  ${L.map((p,i)=>band(p,cols[i])).join('')}
-  ${fish(46,184,'#ff9f43',.7)}${fish(150,214,'#ffd23f',.6)}${fish(78,246,'#ff8fa3',.65)}${fish(160,278,'#ffffff',.6)}
+  ${tr(bx,0,`<line x1="105" y1="100" x2="105" y2="152" stroke="#8b5e3c" stroke-width="2.2"/><path d="M108 102 L108 146 L142 146Z" fill="#fff" stroke="#d5dde6" stroke-width=".6"/><path d="M102 108 L102 146 L78 146Z" fill="${sail}"/><path d="M105 100 L116 103 L105 106Z" fill="#ffd23f"/><path d="M68 150 L142 150 L130 168 L80 168Z" fill="${hull}"/><circle cx="92" cy="158" r="2.6" fill="#fff"/><circle cx="105" cy="158" r="2.6" fill="#fff"/><circle cx="118" cy="158" r="2.6" fill="#fff"/>`)}
+  ${L.map((p,i)=>band(p,th.sea[i])).join('')}${fishes}
   ${L.map(p=>cutp(poly(p))+dot(p[p.length-1])+emo(9,p[0][1]-5.5,5.5,'✂️')).join('')}`;
 }
-/* 오려 붙이기 */
+function actHair(c){
+  const hair=pk([['#4a3328','#5a4033'],['#2b2b33','#3a3a44'],['#c98a3c','#d99a4c'],['#ff9cc2','#ffb0d0'],['#8b5a2b','#9c6a38']],c.r),n=6+Math.floor(c.r()*2);
+  const fr=fringe(c,46,164,132,295,n,hair,(a,b)=>`<path d="${poly(a.map((p,i)=>[(p[0]+b[i][0])/2,p[1]]).filter((_,i)=>i%2===0&&i<150))}" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width=".8"/>`);
+  const clip=pk(['#ee6352','#ffd23f','#3fa7d6','#b48ef0'],c.r);
+  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="${pk(['#f6eefe','#eef7ff','#fff1ea'],c.r)}"/>
+  <rect x="160" y="72" width="34" height="48" rx="17" fill="#fff" stroke="#d8cbe8" stroke-width="2"/><path d="M168 84 l6 -4 M168 92 l12 -8" stroke="#e7def2" stroke-width="1.6" stroke-linecap="round"/>
+  <g transform="translate(24 104) rotate(-20)"><rect x="-3" y="0" width="6" height="34" rx="2" fill="#7fbfe6"/>${[0,1,2,3,4,5].map(i=>`<rect x="-9" y="${2+i*5}" width="6" height="2.2" fill="#7fbfe6"/>`).join('')}</g>
+  <path d="M46 140 L46 96 A59 34 0 0 1 164 96 L164 140Z" fill="${hair[0]}"/>
+  ${fr.fill}
+  <rect x="96" y="114" width="18" height="12" fill="${pk(SKIN,c.r)}"/>
+  ${kid(105,98,hair[0],null,pk(SKIN,c.r),false)}
+  <circle cx="${f(c.r()<.5?84:126)}" cy="76" r="5" fill="${clip}"/><circle cx="${f(c.r()<.5?84:126)}" cy="76" r="2" fill="#fff"/>
+  ${fr.cuts}${emo(40,288,6,'✂️')}`;
+}
+function actFlower(c){
+  const n=5+Math.floor(c.r()*3),x0=24,x1=186,w=(x1-x0)/n;
+  const fr=fringe(c,x0,x1,150,295,n,['#8fd18a','#77c472']);
+  let heads='';for(let i=0;i<n;i++){const cx=x0+w*(i+.5),cy=rn(c.r,128,138);heads+=tr(cx,cy,flowerHead(Math.floor(c.r()*3),pk(['#ff6b8a','#ffd23f','#b78cf2','#ff9f43','#fff','#7fbfe6'],c.r),Math.min(1.5,w/18)))}
+  const bf=()=>{const x=rn(c.r,30,180),y=rn(c.r,72,104),col=pk(['#ffb3c7','#ffe08a','#b8e1ff'],c.r);return tr(x,y,`<path d="M0 0 Q-9 -10 -10 -2 Q-10 5 0 1 Q10 5 10 -2 Q9 -10 0 0Z" fill="${col}"/><path d="M0 -4 V4" stroke="#5d6270" stroke-width="1"/>`)};
+  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="${pk(['#eaf7ff','#fff7e0','#f0ecff'],c.r)}"/>
+  <circle cx="${f(rn(c.r,30,180))}" cy="80" r="11" fill="#ffd23f" opacity=".9"/>${bf()}${bf()}${bf()}
+  <rect x="8" y="148" width="194" height="153" fill="#d7efc9"/>
+  ${fr.fill}${heads}
+  ${fr.cuts}${emo(18,288,6,'✂️')}`;
+}
+function actKimbap(c){
+  const n=6+Math.floor(c.r()*3),x0=26,x1=186;
+  const fr=fringe(c,x0,x1,142,295,n,['none']);
+  const fill=pk([['#ffd75e','#f39237','#5bb36a','#e8553f'],['#ffd75e','#c8742f','#4caf6d','#ff9cc2'],['#ffe58a','#f39237','#3f9b4f','#8b5a2b']],c.r);
+  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="${pk(['#fff6ea','#f2f8ee','#eef4ff'],c.r)}"/>
+  <rect x="14" y="128" width="182" height="98" rx="8" fill="#e8c08f"/><rect x="14" y="128" width="182" height="98" rx="8" fill="none" stroke="#c99a62" stroke-width="1.2"/>
+  <path d="M30 140 H180 M30 214 H180" stroke="#d6aa72" stroke-width=".8"/>
+  <rect x="24" y="152" width="164" height="44" rx="20" fill="#2f4a3a"/><path d="M40 160 H176" stroke="#3f5f4b" stroke-width="2" stroke-linecap="round"/>
+  ${tr(24,174,`<ellipse rx="10" ry="22" fill="#2f4a3a"/><ellipse rx="8" ry="19" fill="#fff"/>${fill.map((col,i)=>`<circle cy="${-8+i*5.5}" r="2.6" fill="${col}"/>`).join('')}`)}
+  <ellipse cx="160" cy="88" rx="24" ry="8" fill="#fff" stroke="#d9d9d9" stroke-width=".8"/>
+  ${[0,1,2].map(i=>tr(148+i*12,84,`<circle r="5.4" fill="#2f4a3a"/><circle r="4.2" fill="#fff"/>${fill.slice(0,3).map((col,j)=>`<circle cx="${-1.6+j*1.6}" cy="${j%2?1:-1}" r="1.1" fill="${col}"/>`).join('')}`)).join('')}
+  ${fr.cuts}${emo(20,288,6,'✂️')}`;
+}
+function actRainbow(c){
+  const n=pk([5,6,7],c.r),cols=['#ff8a80','#ffb36b','#ffe066','#8fd18a','#7fc8ef','#8fa8f0','#c39cf0'].slice(0,n);
+  const fr=hfringe(c,104,264,142,n,cols);
+  const cl=[[166,112,20],[160,146,24],[156,182,26],[160,218,24],[168,250,18],[186,128,22],[190,170,26],[188,212,24],[186,246,18]];
+  const shapes=()=>cl.map(q=>`<circle cx="${q[0]}" cy="${q[1]}" r="${q[2]}"/>`).join('');
+  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="${pk(['#eef8ff','#fff7ee','#f4fff2'],c.r)}"/>
+  <circle cx="${f(rn(c.r,40,110))}" cy="80" r="10" fill="#ffd23f"/>
+  ${[...Array(3)].map(()=>`<path d="M${f(rn(c.r,20,120))} ${f(rn(c.r,276,290))} l2 -6 l2 6 M${f(rn(c.r,20,120))} 290 l2 -5 l2 5" fill="none" stroke="#7cc47f" stroke-width="1.2"/>`).join('')}
+  ${fr.fill}
+  <g fill="#fff" stroke="#b8cbe4" stroke-width="2.4">${shapes()}</g><g fill="#fff">${shapes()}</g>
+  <path d="M168 176 Q172 172 176 176 M186 176 Q190 172 194 176" fill="none" stroke="#2b2b33" stroke-width="1.4" stroke-linecap="round"/><path d="M176 184 Q181 189 186 184" fill="none" stroke="#2b2b33" stroke-width="1.3" stroke-linecap="round"/>
+  <ellipse cx="166" cy="184" rx="4" ry="2.4" fill="#ffc2c2"/><ellipse cx="196" cy="184" rx="4" ry="2.4" fill="#ffc2c2"/>
+  ${fr.cuts}${emo(9,98,5.5,'✂️')}`;
+}
+/* ===== 오려 붙이기 ===== */
 function actCook(c){
   let fl='';for(let i=0;i<12;i++){const a=i/12*Math.PI*2,x=106+60*Math.cos(a),y=120+60*Math.sin(a),deg=a*180/Math.PI+90;fl+=tr(x,y,`<g transform="rotate(${f(deg)})"><path d="M0 -7 Q5 0 3 3 Q0 5 -3 3 Q-5 0 0 -7Z" fill="#ff8a5b"/><path d="M0 -3 Q2 1 1 2 Q0 3 -1 2 Q-2 1 0 -3Z" fill="#ffe08a"/></g>`)}
-  return `<rect x="8" y="56" width="194" height="142" rx="6" fill="#fff0db"/>
+  const handle=pk(['#86b9e8','#f28c6b','#7cc6a8','#f2b84b'],c.r);
+  return pasteScene(c,`<rect x="8" y="56" width="194" height="142" rx="6" fill="#fff0db"/>
   <rect x="18" y="62" width="174" height="130" rx="6" fill="#3d4149"/><rect x="18" y="172" width="174" height="20" rx="4" fill="#a7d8e8"/>
   <circle cx="154" cy="182" r="6" fill="#ffe08a" stroke="#e8c25a" stroke-width="1"/><circle cx="176" cy="182" r="6" fill="#ffe08a" stroke="#e8c25a" stroke-width="1"/>
-  ${fl}
-  <path d="M66 156 L30 190" stroke="#86b9e8" stroke-width="10" stroke-linecap="round"/><circle cx="35" cy="185" r="1.8" fill="#3d4149"/>
+  ${fl}<path d="M66 156 L30 190" stroke="${handle}" stroke-width="10" stroke-linecap="round"/><circle cx="35" cy="185" r="1.8" fill="#3d4149"/>
   <circle cx="106" cy="120" r="56" fill="#9aa0a8"/><circle cx="106" cy="120" r="50" fill="#5d626b"/><circle cx="106" cy="120" r="43" fill="#676c75"/>
-  <path d="M74 92 Q88 80 104 78" fill="none" stroke="#7d828b" stroke-width="2.5" stroke-linecap="round"/>
-  ${spot('egg',79,116)}${spot('mushroom',138,96)}${spot('sausage',108,147)}
-  ${tray(['egg','sausage','mushroom'],c,'굵은 선을 따라 오려서 프라이팬의 풀칠 자리에 붙여요')}`;
+  <path d="M74 92 Q88 80 104 78" fill="none" stroke="#7d828b" stroke-width="2.5" stroke-linecap="round"/>`,
+  [[79,114],[136,98],[108,150]],['egg','sausage','mushroom','tomato','bacon'],'굵은 선을 따라 오려서 프라이팬의 풀칠 자리에 붙여요');
 }
 function actCart(c){
   const id='cc'+c.uid;let grid='';for(let x=50;x<=176;x+=14)grid+=`M${x} 70V150`;for(let y=84;y<150;y+=14)grid+=`M40 ${y}H182`;
-  return `<rect x="8" y="56" width="194" height="142" rx="6" fill="#eaf6ec"/>
+  const w=pk(['#3fa7d6','#ee6352','#5bb36a','#b48ef0'],c.r);
+  return pasteScene(c,`<rect x="8" y="56" width="194" height="142" rx="6" fill="${pk(['#eaf6ec','#fff4e6','#eef2ff'],c.r)}"/>
   <defs><clipPath id="${id}"><path d="M40 70 L182 70 L170 150 L52 150Z"/></clipPath></defs>
-  <path d="M40 70 L182 70 L170 150 L52 150Z" fill="#f7f8fa"/>
-  <path d="${grid}" stroke="#c3c8cf" stroke-width="1.6" clip-path="url(#${id})"/>
+  <path d="M40 70 L182 70 L170 150 L52 150Z" fill="#f7f8fa"/><path d="${grid}" stroke="#c3c8cf" stroke-width="1.6" clip-path="url(#${id})"/>
   <path d="M40 70 L182 70 L170 150 L52 150Z" fill="none" stroke="#8d949e" stroke-width="3" stroke-linejoin="round"/>
-  <path d="M40 70 L30 62 L18 62" fill="none" stroke="#8d949e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><rect x="12" y="58" width="12" height="8" rx="3" fill="#ee6352"/>
+  <path d="M40 70 L30 62 L18 62" fill="none" stroke="#8d949e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><rect x="12" y="58" width="12" height="8" rx="3" fill="${w}"/>
   <path d="M52 150 L60 170 L164 170" fill="none" stroke="#8d949e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="72" cy="180" r="8" fill="#3fa7d6"/><circle cx="72" cy="180" r="3" fill="#fff"/><circle cx="152" cy="180" r="8" fill="#3fa7d6"/><circle cx="152" cy="180" r="3" fill="#fff"/>
-  ${spot('milk',76,110)}${spot('apple',112,114)}${spot('carrot',151,108)}
-  ${tray(['milk','apple','carrot'],c,'굵은 선을 따라 오려서 카트의 풀칠 자리에 붙여요')}`;
+  <circle cx="72" cy="180" r="8" fill="${w}"/><circle cx="72" cy="180" r="3" fill="#fff"/><circle cx="152" cy="180" r="8" fill="${w}"/><circle cx="152" cy="180" r="3" fill="#fff"/>`,
+  [[76,110],[112,114],[151,108]],['milk','apple','carrot','banana','bread','cheese'],'굵은 선을 따라 오려서 카트의 풀칠 자리에 붙여요');
 }
 function actBowl(c){
   const id='bw'+c.uid;
-  return `<rect x="8" y="56" width="194" height="142" rx="6" fill="#eef6ff"/>
+  return pasteScene(c,`<rect x="8" y="56" width="194" height="142" rx="6" fill="#eef6ff"/>
   <defs><clipPath id="${id}"><circle cx="105" cy="124" r="63"/></clipPath></defs>
-  <rect x="20" y="184" width="170" height="9" rx="3" fill="#c9a27a"/>
-  <circle cx="105" cy="124" r="64" fill="#f4fbfe"/>
+  <rect x="20" y="184" width="170" height="9" rx="3" fill="#c9a27a"/><circle cx="105" cy="124" r="64" fill="#f4fbfe"/>
   <g clip-path="url(#${id})"><rect x="38" y="76" width="134" height="120" fill="#c4e9f7"/><path d="M38 80 Q72 74 105 80 Q138 86 172 80 L172 86 L38 86Z" fill="#dff4fb"/><rect x="38" y="166" width="134" height="30" fill="#f3dcae"/>
-  ${[[70,168,'#ee6352'],[86,172,'#ffd23f'],[124,170,'#3fa7d6'],[140,168,'#5bb36a'],[104,174,'#ff8fa3']].map(p=>`<ellipse cx="${p[0]}" cy="${p[1]}" rx="5" ry="3.4" fill="${p[2]}"/>`).join('')}</g>
-  <circle cx="105" cy="124" r="64" fill="none" stroke="#8fc6e0" stroke-width="2.2"/>
-  <ellipse cx="105" cy="62" rx="28" ry="5" fill="#fff" stroke="#8fc6e0" stroke-width="2.2"/>
-  ${[[62,96,2.5],[66,86,1.8],[150,140,2.2],[146,130,1.6]].map(b=>`<circle cx="${b[0]}" cy="${b[1]}" r="${b[2]}" fill="none" stroke="#fff" stroke-width="1"/>`).join('')}
-  ${spot('fishO',88,102)}${spot('weed',146,112)}${spot('fishB',100,146)}
-  ${tray(['fishO','fishB','weed'],c,'굵은 선을 따라 오려서 어항의 풀칠 자리에 붙여요')}`;
+  ${[...Array(6)].map(()=>`<ellipse cx="${f(rn(c.r,56,154))}" cy="${f(rn(c.r,167,176))}" rx="5" ry="3.4" fill="${pk(['#ee6352','#ffd23f','#3fa7d6','#5bb36a','#ff8fa3'],c.r)}"/>`).join('')}</g>
+  <circle cx="105" cy="124" r="64" fill="none" stroke="#8fc6e0" stroke-width="2.2"/><ellipse cx="105" cy="62" rx="28" ry="5" fill="#fff" stroke="#8fc6e0" stroke-width="2.2"/>
+  ${[[62,96,2.5],[66,86,1.8],[150,140,2.2],[146,130,1.6]].map(b=>`<circle cx="${b[0]}" cy="${b[1]}" r="${b[2]}" fill="none" stroke="#fff" stroke-width="1"/>`).join('')}`,
+  [[88,104],[146,112],[100,148]],['fishO','fishB','fishP','weed','starfish','clam'],'굵은 선을 따라 오려서 어항의 풀칠 자리에 붙여요');
 }
 function actCake(c){
   const drip=(x0,x1,y,col)=>{let d=`M${x0} ${y}`;const n=6,w=(x1-x0)/n;for(let i=0;i<n;i++){const a=x0+i*w;d+=` L${f(a+w*.2)} ${y} Q${f(a+w*.35)} ${y+(i%2?9:6)} ${f(a+w*.5)} ${y} L${f(a+w)} ${y}`}return `<path d="${d} L${x1} ${y-4} L${x0} ${y-4}Z" fill="${col}"/>`};
-  return `<rect x="8" y="56" width="194" height="142" rx="6" fill="#fff0f5"/>
+  const t1=pk(['#f7c3d2','#c9e6ff','#d8f0c8','#e7d6ff'],c.r),t2=pk(['#fde1b3','#fff1c9','#ffd6e2','#c7a27a'],c.r),ic=pk(['#fff','#ffe0ec','#7b4a2e'],c.r);
+  return pasteScene(c,`<rect x="8" y="56" width="194" height="142" rx="6" fill="#fff0f5"/>
   <ellipse cx="105" cy="190" rx="84" ry="8" fill="#e3e9f2"/>
-  <rect x="30" y="146" width="150" height="44" rx="6" fill="#f7c3d2"/>${drip(30,180,150,'#fff')}
-  <rect x="56" y="108" width="98" height="40" rx="6" fill="#fde1b3"/>${drip(56,154,112,'#fff')}
-  ${[[44,172],[70,178],[150,176],[166,168]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="#fff" opacity=".8"/>`).join('')}
-  ${spot('candle',126,88)}${spot('berry',82,124)}${spot('cookie',134,170)}
-  <text x="58" y="78" font-family="Jua" font-size="6" fill="#ee6352">생일 축하해!</text>
-  ${tray(['berry','candle','cookie'],c,'굵은 선을 따라 오려서 케이크의 풀칠 자리에 붙여요')}`;
+  <rect x="30" y="146" width="150" height="44" rx="6" fill="${t1}"/>${drip(30,180,150,ic)}
+  <rect x="56" y="108" width="98" height="40" rx="6" fill="${t2}"/>${drip(56,154,112,ic)}
+  ${[...Array(5)].map(()=>`<circle cx="${f(rn(c.r,40,170))}" cy="${f(rn(c.r,166,182))}" r="2.4" fill="#fff" opacity=".8"/>`).join('')}
+  <text x="58" y="78" font-family="Jua" font-size="6" fill="#ee6352">생일 축하해!</text>`,
+  [[126,88],[82,126],[134,170]],['candle','berry','cookie','cherry'],'굵은 선을 따라 오려서 케이크의 풀칠 자리에 붙여요');
 }
-/* 색칠하고 오리기 */
+function actPizza(c){
+  let ch='';for(let i=0;i<9;i++){const a=c.r()*Math.PI*2,d=rn(c.r,6,40);ch+=`<ellipse cx="${f(105+d*Math.cos(a))}" cy="${f(127+d*Math.sin(a))}" rx="${f(rn(c.r,6,11))}" ry="${f(rn(c.r,4,7))}" fill="#ffe08a" opacity=".9"/>`}
+  let ba='';for(let i=0;i<4;i++){const a=c.r()*Math.PI*2,d=rn(c.r,20,44);ba+=`<ellipse cx="${f(105+d*Math.cos(a))}" cy="${f(127+d*Math.sin(a))}" rx="4" ry="2.2" fill="#4caf6d" transform="rotate(${f(a*57)} ${f(105+d*Math.cos(a))} ${f(127+d*Math.sin(a))})"/>`}
+  return pasteScene(c,`<rect x="8" y="56" width="194" height="142" rx="6" fill="${pk(['#fff3e3','#f1f8ee','#fdeef0'],c.r)}"/>
+  <rect x="160" y="118" width="40" height="16" rx="8" fill="#c99a62"/><circle cx="105" cy="127" r="66" fill="#d8a56f"/>
+  <circle cx="105" cy="127" r="60" fill="#f2c27b" stroke="#e0a85e" stroke-width="3"/><circle cx="105" cy="127" r="51" fill="#e4553e"/>${ch}${ba}`,
+  [[76,110],[138,104],[104,160]],['pepperoni','mushroom','olive','pepper','tomato'],'굵은 선을 따라 오려서 피자의 풀칠 자리에 붙여요');
+}
+function actVase(c){
+  const v=pk(['#7fc8ef','#f28c6b','#b78cf2','#ffd23f','#7cc6a8'],c.r),pat=pk(['<path d="M84 172 H126" stroke="#fff" stroke-width="3" stroke-dasharray="4 3"/>','<circle cx="96" cy="172" r="4" fill="#fff"/><circle cx="114" cy="172" r="4" fill="#fff"/>','<path d="M82 168 Q90 162 98 168 T114 168 T130 168" fill="none" stroke="#fff" stroke-width="2.4"/>'],c.r);
+  const sl=[[56,106],[105,90],[154,106]];
+  return pasteScene(c,`<rect x="8" y="56" width="194" height="142" rx="6" fill="${pk(['#eef7ee','#fff4ea','#eef2ff'],c.r)}"/>
+  <rect x="8" y="184" width="194" height="14" fill="#e3c39a"/>
+  ${sl.map(p=>`<path d="M105 150 Q${f((105+p[0])/2)} ${p[1]+36} ${p[0]} ${p[1]+26}" fill="none" stroke="#7cc47f" stroke-width="2.4" stroke-linecap="round"/>`).join('')}
+  <path d="M88 148 Q80 150 82 158 Q70 176 82 190 L128 190 Q140 176 128 158 Q130 150 122 148Z" fill="${v}"/><ellipse cx="105" cy="148" rx="17" ry="3" fill="#000" opacity=".12"/>${pat}`,
+  sl,['tulip','daisy','sunflower','bloom'],'굵은 선을 따라 꽃을 오려서 꽃병의 풀칠 자리에 붙여요');
+}
+function actTree(c){
+  let sn='';for(let i=0;i<14;i++)sn+=`<circle cx="${f(rn(c.r,14,196))}" cy="${f(rn(c.r,62,180))}" r="${f(rn(c.r,.8,1.8))}" fill="#fff"/>`;
+  return pasteScene(c,`<rect x="8" y="56" width="194" height="142" rx="6" fill="${pk(['#dfeef5','#e8e4f5','#e4f1e8'],c.r)}"/>${sn}
+  <ellipse cx="105" cy="194" rx="96" ry="12" fill="#fff"/>
+  <rect x="98" y="176" width="14" height="16" fill="#8b5e3c"/>
+  <path d="M105 62 L134 102 L120 102 L150 140 L132 140 L164 178 L46 178 L78 140 L60 140 L90 102 L76 102Z" fill="#3f9b5f"/>
+  <path d="M105 62 L134 102 L120 102 L105 84Z M120 102 L150 140 L132 140 L118 122Z" fill="#4caf6d"/>
+  <path d="${sp(8,.5,0)}" fill="#ffd23f" transform="translate(105 62)"/>`,
+  [[78,130],[134,120],[106,166]],['tstar','ballR','ballB','cane','bell','gift'],'굵은 선을 따라 오려서 트리의 풀칠 자리에 붙여요');
+}
+function actLunch(c){
+  const box=pk(['#7fc8ef','#f28c6b','#ffd23f','#b78cf2','#7cc6a8'],c.r);
+  return pasteScene(c,`<rect x="8" y="56" width="194" height="142" rx="6" fill="#fff7e6"/>
+  <rect x="20" y="64" width="170" height="128" rx="14" fill="${box}"/><rect x="27" y="71" width="156" height="114" rx="9" fill="#fff"/>
+  <rect x="93" y="71" width="4" height="114" fill="${box}" opacity=".6"/><rect x="97" y="126" width="86" height="3" fill="${box}" opacity=".6"/>
+  <path d="M190 112 h8 v20 h-8" fill="none" stroke="${box}" stroke-width="3"/>`,
+  [[60,128],[140,98],[140,156]],['riceball','eggroll','ptomato','broccoli','octos','apple'],'굵은 선을 따라 오려서 도시락의 풀칠 자리에 붙여요');
+}
+/* ===== 색칠하고 오리기 ===== */
 function actCrown(c){
   const one=yb=>{const x0=14,x1=180,n=5,w=(x1-x0)/n,yt=yb-22;let d=`M${x0} ${yb}V${yt}`,g='';
+    const gem=pk([0,1,2],c.r),top=pk([0,1,2],c.r);
     for(let i=0;i<n;i++){const a=x0+i*w,m=a+w/2,b=a+w;
       if(c.diff===1)d+=` A${f(w/2)} ${f(w*.42)} 0 0 1 ${f(b)} ${yt}`;
       else if(c.diff===2)d+=` L${f(m)} ${yt-30} L${f(b)} ${yt}`;
       else d+=` L${f(m-2.4)} ${yt-40} A4.6 4.6 0 1 1 ${f(m+2.4)} ${yt-40} L${f(b)} ${yt}`;
-      g+=i%2?`<path d="M${f(m)} ${yb-17} L${f(m+5)} ${yb-11} L${f(m)} ${yb-5} L${f(m-5)} ${yb-11}Z"/>`:`<circle cx="${f(m)}" cy="${yb-11}" r="4.6"/>`;
-      g+=c.diff===1?`<circle cx="${f(m)}" cy="${yt-9}" r="2.6"/>`:`<path d="${poly(makeShape('star',m,yt-13,4.2).pts)}Z"/>`;
+      const k=(i+gem)%3;g+=k===0?`<circle cx="${f(m)}" cy="${yb-11}" r="4.6"/>`:k===1?`<path d="M${f(m)} ${yb-17} L${f(m+5)} ${yb-11} L${f(m)} ${yb-5} L${f(m-5)} ${yb-11}Z"/>`:tr(m,yb-10,`<path d="${hp(5)}"/>`);
+      const ty=c.diff===1?yt-9:yt-13;g+=top===0?tr(m,ty,`<path d="${sp(4.4,.5)}"/>`):top===1?tr(m,ty,`<path d="${hp(4.2)}"/>`):`<circle cx="${f(m)}" cy="${ty}" r="3"/>`;
     }
     d+=` L194 ${yt} L194 ${yb}Z`;
-    return `<g fill="none" stroke="#8a8f98" stroke-width=".55">${g}<line x1="${x0}" y1="${yt+2}" x2="${x1}" y2="${yt+2}"/></g>
-    <line x1="${x1}" y1="${yt}" x2="${x1}" y2="${yb}" stroke="#9aa0a8" stroke-width=".5" stroke-dasharray="1.6 1.2"/>
-    <text x="187" y="${yb-9}" font-family="Jua" font-size="3.6" text-anchor="middle" fill="#9aa0a8">풀칠</text>${cutp(d)}`};
+    return G(g+`<line x1="${x0}" y1="${yt+2}" x2="${x1}" y2="${yt+2}"/>`)+fold(x1,yt,x1,yb)+lbl(187,yb-9,'풀칠')+cutp(d)};
   return one(138)+one(242);
 }
 function pickSil(th,r,n,pref){let pool=th.sil?th.sil.slice():['dog','cat','bear','rabbit'];if(pref){const p=pool.filter(k=>pref.includes(k));pool=p.length?p:pref.slice()}const o=[];let s=shuffle(pool,r);while(o.length<n){if(!s.length)s=shuffle(pool,r);o.push(s.pop())}return o}
 function actFinger(c){
   const keys=pickSil(c.th,c.r,4);let s='';
   [[57,66],[153,66],[57,166],[153,166]].forEach((p,i)=>{const[cx,ty]=p;
-    s+=silColor(keys[i],cx-31,ty,.62)+cutp(rr(cx-30,ty+68,60,13,3))
-    +`<line x1="${cx+18}" y1="${ty+68}" x2="${cx+18}" y2="${ty+81}" stroke="#9aa0a8" stroke-width=".5" stroke-dasharray="1.4 1"/><text x="${cx+24}" y="${ty+76}" font-family="Jua" font-size="3.4" text-anchor="middle" fill="#9aa0a8">풀칠</text>
-    <text x="${cx-6}" y="${ty+76.3}" font-family="Gowun Dodum" font-size="3.2" text-anchor="middle" fill="#9aa0a8">손가락 띠</text>`});
+    s+=silColor(keys[i],cx-31,ty,.62)+cutp(rr(cx-30,ty+68,60,13,3))+fold(cx+18,ty+68,cx+18,ty+81)+lbl(cx+24,ty+76,'풀칠',3.4)
+    +`<text x="${cx-6}" y="${ty+76.3}" font-family="Gowun Dodum" font-size="3.2" text-anchor="middle" fill="#9aa0a8">손가락 띠</text>`});
   return s;
 }
 function actPuzzle(c){
   const key=pickSil(c.th,c.r,1)[0],x0=22,y0=64,W=166,H=208,mx=x0+W/2,my=y0+H/2,amp=c.diff===1?0:5;
   let cuts=cutp(rr(x0,y0,W,H,4));
-  if(c.diff===1)cuts+=cutp(`M${mx} ${y0}V${y0+H}`);
-  else if(c.diff===2)cuts+=cutp(poly(lineXY(mx,y0,mx,y0+H,2,amp,3)))+cutp(poly(lineXY(x0,my,x0+W,my,2,amp,3)));
+  if(c.diff===1)cuts+=c.r()<.5?cutp(`M${mx} ${y0}V${y0+H}`):cutp(`M${x0} ${my}H${x0+W}`);
+  else if(c.diff===2)cuts+=cutp(poly(lineXY(mx,y0,mx,y0+H,2,amp,rn(c.r,2,4))))+cutp(poly(lineXY(x0,my,x0+W,my,2,amp,rn(c.r,2,4))));
   else cuts+=[x0+W/3,x0+W*2/3].map(x=>cutp(poly(lineXY(x,y0,x,y0+H,3,4,6)))).join('')+cutp(poly(lineXY(x0,my,x0+W,my,3,4,8)));
-  return `<g fill="none" stroke="#b5b9c0" stroke-width=".55" stroke-linecap="round"><circle cx="166" cy="86" r="9"/>${[0,60,120,180,240,300].map(a=>{const t=a*Math.PI/180;return `<line x1="${f(166+12*Math.cos(t))}" y1="${f(86+12*Math.sin(t))}" x2="${f(166+16*Math.cos(t))}" y2="${f(86+16*Math.sin(t))}"/>`}).join('')}
-  <path d="M30 80 q6 -6 12 0 q6 -6 12 0 q4 4 0 7 h-24 q-4 -3 0 -7Z"/><path d="M26 252 q10 -8 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0"/>${[40,70,140,170].map(x=>`<path d="M${x} 262 l2 -6 l2 6 M${x+6} 262 l2 -5 l2 5"/>`).join('')}</g>
-  ${silColor(key,105-72,88,1.44,.9)}${cuts}`;
+  const deco=[()=>{const x=rn(c.r,150,172);return `<circle cx="${f(x)}" cy="86" r="9"/>${[0,60,120,180,240,300].map(a=>{const t=a*Math.PI/180;return `<line x1="${f(x+12*Math.cos(t))}" y1="${f(86+12*Math.sin(t))}" x2="${f(x+16*Math.cos(t))}" y2="${f(86+16*Math.sin(t))}"/>`}).join('')}`},
+    ()=>`<path d="M${f(rn(c.r,30,60))} 82 q6 -6 12 0 q6 -6 12 0 q4 4 0 7 h-24 q-4 -3 0 -7Z"/>`,
+    ()=>[...Array(3)].map(()=>tr(rn(c.r,32,178),rn(c.r,240,262),flowerHead(Math.floor(c.r()*3),'none',.8).replace(/fill="none"/g,'fill="none"'))).join(''),
+    ()=>[...Array(4)].map(()=>tr(rn(c.r,30,180),rn(c.r,72,96),`<path d="${hp(3.5)}"/>`)).join(''),
+    ()=>`<path d="M26 252 q10 -8 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0"/>`];
+  return G(shuffle(deco,c.r).slice(0,3).map(fn=>fn()).join('')).replace(/<circle r="4.6" fill="#ffc53d"\/>|<circle r="3.6" fill="#fff3b0"\/>/g,'')+silColor(key,105-72,88,1.44,.9)+cuts;
 }
 const FACE={dog:{e:[[40,48],[60,48]],h:[[12,44],[88,44]]},cat:{e:[[40,52],[60,52]],h:[[25,58],[75,58]]},bear:{e:[[40,50],[60,50]],h:[[21,60],[79,60]]},rabbit:{e:[[42,56],[58,56]],h:[[32,64],[68,64]]}};
 function actMask(c){
-  const key=pickSil(c.th,c.r,1,Object.keys(FACE))[0],k=1.74,tx=105-50*k,ty=64,F=FACE[key];
-  const T=p=>[tx+p[0]*k,ty+p[1]*k];
+  const key=pickSil(c.th,c.r,1,Object.keys(FACE))[0],k=1.74,tx=105-50*k,ty=64,F=FACE[key],T=p=>[tx+p[0]*k,ty+p[1]*k];
   return silColor(key,tx,ty,k)+F.e.map(p=>{const q=T(p);return `<circle cx="${f(q[0])}" cy="${f(q[1])}" r="9.5" fill="#fff" stroke="#2b2b33" stroke-width="1" stroke-dasharray="2 1.4"/>`}).join('')
   +F.h.map(p=>{const q=T(p);return `<circle cx="${f(q[0])}" cy="${f(q[1])}" r="2.4" fill="#fff" stroke="#2b2b33" stroke-width=".7"/>`}).join('')
   +`<text x="105" y="262" font-family="Gowun Dodum" font-size="3.6" text-anchor="middle" fill="#888">점선 동그라미(눈 구멍)는 어른이 오려 주세요 · 작은 구멍에 고무줄을 끼워요</text>`;
+}
+const EARS={
+  cat:{d:'M-22 22 L0 -28 L22 22',a:22,yb:22,i:'<path d="M-12 16 L0 -12 L12 16"/>'},
+  rabbit:{d:'M-12 24 Q-18 -34 0 -38 Q18 -34 12 24',a:12,yb:24,i:'<path d="M-6 18 Q-9 -24 0 -27 Q9 -24 6 18"/>'},
+  bear:{d:'M-20 14 A22 22 0 1 1 20 14',a:20,yb:14,i:'<circle cy="0" r="11"/>'},
+  dog:{d:'M-16 24 Q-26 -10 -10 -26 Q8 -34 18 -12 Q22 6 16 24',a:16,yb:24,i:'<path d="M-8 16 Q-14 -6 -4 -16 Q6 -20 10 -6"/>'}
+};
+function actBand(c){
+  const key=pickSil(c.th,c.r,1,Object.keys(EARS))[0],E=EARS[key],s=1.5;
+  const ear=(x,flip)=>`<g transform="translate(${x} 104) scale(${flip?-s:s} ${s})"><g fill="none" stroke="#8a8f98" stroke-width="${f(.55/s)}">${E.i}</g><path d="${E.d} L${E.a} ${E.yb+12} L${-E.a} ${E.yb+12}Z" fill="none" stroke="#2b2b33" stroke-width="${f(1.2/s)}" stroke-linejoin="round"${S.dash?` stroke-dasharray="${f(3.2/s)} ${f(2/s)}"`:''}/><line x1="${-E.a}" y1="${E.yb}" x2="${E.a}" y2="${E.yb}" stroke="#9aa0a8" stroke-width="${f(.5/s)}" stroke-dasharray="${f(1.6/s)} ${f(1.2/s)}"/></g>`;
+  const amp=c.diff===1?0:3,cyc=rn(c.r,5,8);
+  const band=y=>{const top=lineXY(14,y,180,y,c.diff,amp,cyc);const d=`M14 ${y+24} ${poly(top).replace('M','L')} L194 ${y} L194 ${y+24}Z`;
+    const motif=pk(['dots','hearts','stars'],c.r);let g='';for(let x=26;x<172;x+=16)g+=motif==='dots'?`<circle cx="${x}" cy="${y+13}" r="3"/>`:tr(x,y+13,`<path d="${motif==='hearts'?hp(3.6):sp(4,.5)}"/>`);
+    return G(g)+fold(180,y,180,y+24)+lbl(187,y+14,'풀칠')+cutp(d)};
+  return ear(62,false)+ear(148,true)+lbl(62,104+s*(E.yb+9),'풀칠',3.2)+lbl(148,104+s*(E.yb+9),'풀칠',3.2)+band(178)+band(226)
+  +`<text x="105" y="270" font-family="Gowun Dodum" font-size="3.4" text-anchor="middle" fill="#888">띠 두 개를 풀칠 칸으로 이어 머리 둘레에 맞추고, 귀를 띠 안쪽에 붙여요</text>`;
+}
+function actWatch(c){
+  const one=y=>{const cx=96,R=22,dx=f(Math.sqrt(R*R-81));
+    const d=`M22 ${y-9} H${f(cx-dx)} A${R} ${R} 0 0 1 ${f(cx+dx)} ${y-9} H190 V${y+9} H${f(cx+dx)} A${R} ${R} 0 0 1 ${f(cx-dx)} ${y+9} H22 A6 6 0 0 1 16 ${y+3} V${y-3} A6 6 0 0 1 22 ${y-9}Z`;
+    const face=pk([0,1,2],c.r);let g=`<circle cx="${cx}" cy="${y}" r="17"/>`;
+    if(face===0)g+=[['12',0,-12],['3',12,1.3],['6',0,14],['9',-12,1.3]].map(t=>`<text x="${cx+t[1]}" y="${y+t[2]}" font-family="Jua" font-size="4" text-anchor="middle" fill="#9aa0a8" stroke="none">${t[0]}</text>`).join('');
+    else if(face===1)g+=[...Array(12)].map((_,i)=>{const a=i*Math.PI/6;return `<line x1="${f(cx+13*Math.cos(a))}" y1="${f(y+13*Math.sin(a))}" x2="${f(cx+15.5*Math.cos(a))}" y2="${f(y+15.5*Math.sin(a))}"/>`}).join('');
+    else g+=tr(cx,y-11,`<path d="${hp(3.4)}"/>`)+tr(cx,y+12,`<path d="${sp(3.4,.5)}"/>`);
+    const h1=rn(c.r,0,Math.PI*2),h2=rn(c.r,0,Math.PI*2);
+    g+=`<line x1="${cx}" y1="${y}" x2="${f(cx+7*Math.sin(h1))}" y2="${f(y-7*Math.cos(h1))}" stroke-width="1.2"/><line x1="${cx}" y1="${y}" x2="${f(cx+11*Math.sin(h2))}" y2="${f(y-11*Math.cos(h2))}"/><circle cx="${cx}" cy="${y}" r="1.2"/>`;
+    g+=[30,40,50,60].map(x=>`<circle cx="${x}" cy="${y}" r="1.6"/>`).join('')+[132,146,160].map(x=>pk([`<circle cx="${x}" cy="${y}" r="3"/>`,tr(x,y,`<path d="${hp(3.4)}"/>`),tr(x,y,`<path d="${sp(3.6,.5)}"/>`)],c.r)).join('');
+    return G(g)+fold(176,y-9,176,y+9)+lbl(183,y+1.3,'풀칠',3.2)+cutp(d)};
+  return one(112)+one(206)+`<text x="105" y="262" font-family="Gowun Dodum" font-size="3.4" text-anchor="middle" fill="#888">시계 바늘을 원하는 시간으로 그려 보아요 · 손목에 감아 풀칠 칸에 붙여요</text>`;
+}
+const ORN={
+  ball:'M-6 -15.08 V-21 H6 V-15.08 A20 20 0 1 1 -6 -15.08Z',
+  heart:null,star:null,
+  bell:'M-18 14 Q-18 -14 0 -20 Q18 -14 18 14 L22 18 L4 18 A4 4 0 0 1 -4 18 L-22 18 L-18 14Z',
+  tree:'M0 -24 L14 -6 L8 -6 L20 10 L5 10 L5 20 L-5 20 L-5 10 L-20 10 L-8 -6 L-14 -6Z',
+  snowman:'M-4.71 -9.18 A10 10 0 1 1 4.71 -9.18 A14 14 0 1 1 -4.71 -9.18Z',
+  mitten:'M-12 22 L-12 -6 Q-12 -22 2 -22 Q14 -22 14 -6 L14 4 Q22 -4 24 4 Q24 10 14 16 L14 22Z'
+};
+function actOrnament(c){
+  ORN.heart=poly(makeShape('heart',0,2,22).pts)+'Z';ORN.star=sp(25,.55,2);
+  const pool=c.diff===1?['ball','heart','star','ball','heart']:c.diff===2?['ball','heart','star','bell','tree']:['bell','tree','snowman','mitten','star'];
+  const keys=[...Array(6)].map(()=>pk(pool,c.r));
+  return keys.map((k,i)=>{const cx=[40,105,170][i%3],cy=i<3?110:206,s=1.45;
+    const top={ball:-21,heart:-15,star:-23,bell:-20,tree:-24,snowman:-21,mitten:-22}[k];
+    const pat=pk(['<path d="M-14 0 l4 -4 l4 4 l4 -4 l4 4 l4 -4 l4 4"/>','<circle cx="-6" cy="2" r="2"/><circle cx="6" cy="6" r="2"/><circle cx="0" cy="-5" r="2"/>','<path d="M-14 -2 H14 M-14 6 H14"/>','<path d="M-4 -4 L4 4 M4 -4 L-4 4 M0 -6 V6 M-6 0 H6"/>'],c.r);
+    return `<g transform="translate(${cx} ${cy}) scale(${s})">${`<g fill="none" stroke="#8a8f98" stroke-width="${f(.55/s)}" stroke-linecap="round">${k==='snowman'?'<circle cx="-3" cy="-13" r="1.2"/><circle cx="3" cy="-13" r="1.2"/><path d="M-3 -8 Q0 -6 3 -8"/><circle cy="4" r="1.2"/><circle cy="10" r="1.2"/>':pat}</g>`}<path d="${ORN[k]}" fill="none" stroke="#2b2b33" stroke-width="${f(1.2/s)}" stroke-linejoin="round"${S.dash?` stroke-dasharray="${f(3.2/s)} ${f(2/s)}"`:''}/><circle cy="${top+5}" r="2" fill="#fff" stroke="#2b2b33" stroke-width="${f(.6/s)}" stroke-dasharray="${f(1/s)} ${f(.8/s)}"/></g>`}).join('')
+  +`<text x="105" y="262" font-family="Gowun Dodum" font-size="3.4" text-anchor="middle" fill="#888">색칠하고 오린 뒤, 작은 구멍에 끈을 꿰어 장식해요</text>`;
+}
+function actFan(c){
+  const x0=20,x1=190,y0=78,y1=236,amp=c.diff===1?0:5,top=lineXY(x0,y0,x1,y0,c.diff===1?1:c.diff,amp,10);
+  const d=`M${x0} ${y1} ${poly(top).replace('M','L')} L${x1} ${y1}Z`;
+  const motif=pk(['circles','hearts','waves','stars'],c.r);let g='';
+  for(let row=0;row<4;row++){const y=y0+28+row*36;
+    if(motif==='waves')g+=`<path d="M${x0+6} ${y} ${[...Array(10)].map((_,i)=>`q8.2 ${i%2?6:-6} 16.4 0`).join(' ')}"/>`;
+    else for(let x=x0+12+(row%2)*8;x<x1-8;x+=17)g+=motif==='circles'?`<circle cx="${x}" cy="${y}" r="4"/>`:tr(x,y,`<path d="${motif==='hearts'?hp(4):sp(4.4,.5)}"/>`);}
+  let folds='';for(let x=x0+17;x<x1;x+=17)folds+=`<line x1="${x}" y1="${y0+4}" x2="${x}" y2="${y1}" stroke="#9aa0a8" stroke-width=".5" stroke-dasharray="${(x-x0)/17%2?'1.6 1.2':'4 1.6'}"/>`;
+  return G(g)+folds+cutp(d)+`<text x="105" y="250" font-family="Gowun Dodum" font-size="3.4" text-anchor="middle" fill="#888">색칠하고 오린 뒤, 점선을 따라 앞뒤로 번갈아 접고 아래를 모아 테이프로 붙여요</text>`;
 }
 const ACTS={
   noodle:{type:'A',icon:'🍜',name:'후루룩 국수 면',desc:'면 사이를 아래에서 위로 오려요',cap:'후루룩! 선을 따라 국수 면을 오려요',tip:'종이 아래 끝에서 시작해 빨간 점까지만 오려요',fn:actNoodle},
   octo:{type:'A',icon:'🐙',name:'꾸물꾸물 문어 다리',desc:'다리 사이를 오리면 꾸물꾸물',cap:'꾸물꾸물! 문어 다리를 오려요',tip:'종이 아래 끝에서 시작해 빨간 점까지만 오려요',fn:actOcto},
   rain:{type:'A',icon:'🌧️',name:'주룩주룩 빗줄기',desc:'빗줄기를 오려 살랑살랑',cap:'주룩주룩! 빗줄기를 오려요',tip:'종이 아래 끝에서 시작해 빨간 점까지만 오려요',fn:actRain},
   wave:{type:'A',icon:'🌊',name:'출렁출렁 파도',desc:'옆으로 길게 파도 오리기',cap:'출렁출렁! 파도를 오려요',tip:'왼쪽 끝에서 빨간 점까지 오린 뒤, 파도를 위아래로 움직여 보아요',fn:actWave},
-  cook:{type:'B',icon:'🍳',name:'요리사 놀이',desc:'계란·소시지·버섯을 팬에 쏙',cap:'맛있는 아침! 재료를 오려 프라이팬에 붙여요',fn:actCook},
-  cart:{type:'B',icon:'🛒',name:'장보기 카트',desc:'우유·사과·당근을 카트에 담기',cap:'장보기 놀이! 물건을 오려 카트에 담아요',fn:actCart},
-  bowl:{type:'B',icon:'🐟',name:'어항 꾸미기',desc:'물고기와 수초로 어항 꾸미기',cap:'어항 꾸미기! 물고기를 오려 어항에 넣어요',fn:actBowl},
+  hair:{type:'A',icon:'💇',name:'싹둑 미용실',desc:'긴 머리카락을 싹둑싹둑',cap:'미용실 놀이! 긴 머리를 오려요',tip:'종이 아래 끝에서 시작해 빨간 점까지만 오려요',fn:actHair},
+  flower:{type:'A',icon:'🌷',name:'살랑살랑 꽃밭',desc:'꽃줄기 사이를 오려요',cap:'살랑살랑! 꽃줄기를 오려요',tip:'종이 아래 끝에서 시작해 꽃 아래 빨간 점까지만 오려요',fn:actFlower},
+  kimbap:{type:'A',icon:'🍙',name:'김밥 썰기',desc:'선을 따라 김밥을 썰어요',cap:'김밥 썰기! 선을 따라 김밥을 오려요',tip:'종이 아래 끝에서 시작해 김밥 위 빨간 점까지 오려요',fn:actKimbap},
+  rainbow:{type:'A',icon:'🌈',name:'알록달록 무지개',desc:'무지개 띠를 옆으로 오려요',cap:'알록달록! 무지개 띠를 오려요',tip:'왼쪽 끝에서 시작해 구름 앞 빨간 점까지 오려요',fn:actRainbow},
+  cook:{type:'B',icon:'🍳',name:'요리사 놀이',desc:'재료를 오려 프라이팬에 쏙',cap:'맛있는 아침! 재료를 오려 프라이팬에 붙여요',fn:actCook},
+  cart:{type:'B',icon:'🛒',name:'장보기 카트',desc:'물건을 오려 카트에 담기',cap:'장보기 놀이! 물건을 오려 카트에 담아요',fn:actCart},
+  bowl:{type:'B',icon:'🐟',name:'어항 꾸미기',desc:'바다 친구로 어항 꾸미기',cap:'어항 꾸미기! 바다 친구를 오려 어항에 넣어요',fn:actBowl},
   cake:{type:'B',icon:'🎂',name:'생일 케이크',desc:'딸기·초·쿠키로 케이크 꾸미기',cap:'생일 축하해! 오려서 케이크를 꾸며요',fn:actCake},
+  pizza:{type:'B',icon:'🍕',name:'피자 만들기',desc:'토핑을 오려 피자에 올리기',cap:'피자 가게 놀이! 토핑을 오려 피자에 올려요',fn:actPizza},
+  vase:{type:'B',icon:'💐',name:'꽃병 꽂기',desc:'꽃을 오려 꽃병에 꽂기',cap:'꽃집 놀이! 꽃을 오려 꽃병에 꽂아요',fn:actVase},
+  tree:{type:'B',icon:'🎄',name:'트리 꾸미기',desc:'장식을 오려 트리에 달기',cap:'메리 크리스마스! 장식을 오려 트리를 꾸며요',fn:actTree},
+  lunch:{type:'B',icon:'🍱',name:'도시락 싸기',desc:'반찬을 오려 도시락에 담기',cap:'소풍 가요! 반찬을 오려 도시락에 담아요',fn:actLunch},
   crown:{type:'C',icon:'👑',name:'왕관 만들기',desc:'색칠해서 머리에 쓰는 왕관',cap:'색칠하고 오려서 왕관을 만들어요',tip:'두 왕관을 풀칠 칸으로 이어 붙여 머리 둘레에 맞춰요',fn:actCrown},
   finger:{type:'C',icon:'🖐️',name:'손가락 인형',desc:'테마 친구 손가락 인형',cap:'색칠하고 오려서 손가락 인형을 만들어요',tip:'띠를 둥글게 말아 인형 뒤에 붙이면 손가락에 쏙!',fn:actFinger,noDiff:1,theme:1},
   puzzle:{type:'C',icon:'🧩',name:'색칠 퍼즐',desc:'색칠하고 오려서 퍼즐 맞추기',cap:'색칠하고 오려서 퍼즐을 맞춰요',tip:'그림을 먼저 색칠한 뒤 굵은 선을 따라 조각을 오려요',fn:actPuzzle,theme:1},
-  mask:{type:'C',icon:'🎭',name:'동물 가면',desc:'색칠하고 오려 쓰는 동물 가면',cap:'색칠하고 오려서 동물 가면을 만들어요',tip:'겉 선을 먼저 오리고, 눈 구멍은 어른과 함께 오려요',fn:actMask,noDiff:1,theme:1}
+  mask:{type:'C',icon:'🎭',name:'동물 가면',desc:'색칠하고 오려 쓰는 동물 가면',cap:'색칠하고 오려서 동물 가면을 만들어요',tip:'겉 선을 먼저 오리고, 눈 구멍은 어른과 함께 오려요',fn:actMask,noDiff:1,theme:1},
+  band:{type:'C',icon:'🐰',name:'동물 머리띠',desc:'귀가 달린 머리띠 만들기',cap:'색칠하고 오려서 동물 머리띠를 만들어요',tip:'귀와 띠를 오린 뒤 점선을 접어 풀칠해요',fn:actBand,theme:1},
+  watch:{type:'C',icon:'⌚',name:'손목시계',desc:'시계를 그리고 손목에 착',cap:'색칠하고 오려서 손목시계를 만들어요',tip:'겉 선을 따라 오린 뒤 손목에 감아 붙여요',fn:actWatch,noDiff:1},
+  ornament:{type:'C',icon:'⭐',name:'겨울 장식',desc:'색칠하고 오려 거는 장식',cap:'색칠하고 오려서 겨울 장식을 만들어요',tip:'쉬움은 동그란 모양, 어려움은 눈사람·장갑 모양이 나와요',fn:actOrnament},
+  fan:{type:'C',icon:'🪭',name:'접는 부채',desc:'색칠하고 오려서 접는 부채',cap:'색칠하고 오려서 부채를 만들어요',tip:'윗선은 난이도에 따라 곧은 선·물결·지그재그로 바뀌어요',fn:actFan}
 };
 function actSheet(pg){
   const a=ACTS[pg.act],th=allThemes()[pg.theme]||THEMES.animal,c={r:rng(pg.seed),diff:S.diff,th,uid:pg.seed};
