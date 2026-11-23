@@ -32,8 +32,8 @@ h1,h2,.jua{font-family:Jua,"Gowun Dodum",sans-serif;font-weight:400}
 .panel{display:flex;flex-direction:column;gap:22px;counter-reset:step}
 .box:not([hidden]){counter-increment:step}.box h2 .n::before{content:counter(step)}
 [hidden]{display:none!important}
-.mode{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.mode button{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:16px;padding:10px;min-height:64px;font-family:Jua,sans-serif;font-size:17px;cursor:pointer;line-height:1.25}
+.mode{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mode button{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:16px;padding:10px;min-height:64px;font-family:Jua,sans-serif;font-size:16px;cursor:pointer;line-height:1.25;word-break:keep-all}
 .mode button small{display:block;font-family:"Gowun Dodum",sans-serif;font-size:12.5px;color:var(--muted);margin-top:2px}
 .mode button[aria-pressed=true]{background:var(--sky);border-color:var(--sky);color:#fff}.mode button[aria-pressed=true] small{color:#eaf6fc}
 .grp{margin:8px 0 0;font-family:Jua,sans-serif;font-size:15px;color:var(--tom)}
@@ -111,21 +111,28 @@ summary{cursor:pointer;font-family:Jua,sans-serif;font-size:18px;min-height:32px
 
 <div class="wrap" id="app">
   <aside class="panel">
-    <div class="mode" id="mode" role="group" aria-label="활동지 종류"><button data-mode="line">✂️ 단계별 선 오리기<small>선 따라·도형·그림 모양</small></button><button data-mode="act">🎨 놀이 활동지<small>테마 자르기·오려 붙이기·색칠</small></button></div>
-    <section class="box act-only">
+    <div class="mode" id="mode" role="group" aria-label="활동지 종류"><button data-mode="line">✂️ 단계별<small>선·도형·그림</small></button><button data-mode="act">🎨 골라 만들기<small>놀이 활동 24가지</small></button><button data-mode="rand">🎲 랜덤 뽑기<small>무엇이 나올까?</small></button></div>
+    <section class="box" data-modes="rand">
+      <h2><span class="n"></span>어떤 활동에서 뽑을까요?</h2>
+      <div class="chips" id="kinds"></div>
+      <h2 style="font-size:17px;margin-top:14px">난이도는 어디까지?</h2>
+      <div class="chips" id="rmax"></div>
+      <p class="note" style="margin-top:8px">장마다 활동·난이도·모양이 무작위로 정해지고, 다 나오기 전까지는 같은 활동이 겹치지 않아요.</p>
+    </section>
+    <section class="box" data-modes="act">
       <h2><span class="n"></span>활동 고르기 <small class="note">(여러 개 가능)</small></h2>
       <div class="levels" id="acts"></div>
     </section>
-    <section class="box act-only">
+    <section class="box" data-modes="act">
       <h2><span class="n"></span>오리는 선 난이도</h2>
       <div class="chips" id="diffs"></div>
       <p class="note" style="margin-top:8px">오려 붙이기는 쉬움이면 네모 상자, 보통·어려움이면 그림 모양대로 오려요.</p>
     </section>
-    <section class="box line-only">
+    <section class="box" data-modes="line">
       <h2><span class="n"></span>단계 고르기 <small class="note">(여러 개 가능)</small></h2>
       <div class="levels" id="levels"></div>
     </section>
-    <section class="box line-only">
+    <section class="box" data-modes="line rand">
       <h2><span class="n"></span>한 장에 미션 몇 개?</h2>
       <div class="chips" id="missions"><button class="chip" data-m="1">크게 1개</button><button class="chip" data-m="2">2개</button></div>
     </section>
@@ -138,7 +145,7 @@ summary{cursor:pointer;font-family:Jua,sans-serif;font-size:18px;min-height:32px
     </section>
     <section class="box">
       <h2><span class="n"></span>테마 고르기</h2>
-      <p class="note act-only" style="margin:-4px 0 8px">손가락 인형·퍼즐·가면 그림이 테마를 따라가요.</p>
+      <p class="note" data-modes="act rand" style="margin:-4px 0 8px">손가락 인형·퍼즐·가면 그림이 테마를 따라가요.</p>
       <div class="chips" id="themes"></div>
       <details style="margin-top:12px">
         <summary>✏️ 나만의 테마 만들기</summary>
@@ -154,7 +161,7 @@ summary{cursor:pointer;font-family:Jua,sans-serif;font-size:18px;min-height:32px
     <section class="box">
       <h2><span class="n"></span>꾸미기</h2>
       <div class="opts">
-        <label class="line-only"><input type="checkbox" id="oStory" checked> 이야기 미션 문장 넣기</label>
+        <label data-modes="line rand"><input type="checkbox" id="oStory" checked> 이야기 미션 문장 넣기</label>
         <label><input type="checkbox" id="oName" checked> 이름·날짜 칸 넣기</label>
         <label><input type="checkbox" id="oDash"> 오리는 선을 점선으로</label>
         <label><input type="checkbox" id="oBw"> 흑백으로 (색칠놀이용)</label>
@@ -223,7 +230,7 @@ const shuffle=(a,r)=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.flo
 const poly=p=>'M'+p.map(q=>f(q[0])+' '+f(q[1])).join('L');
 SIL.star={n:'별을',d:poly(makeShape('star',50,46,42).pts)+'Z',x:'<circle cx="42" cy="46" r="2.5"/><circle cx="58" cy="46" r="2.5"/><path d="M44 56 Q50 61 56 56"/>'};
 
-let S={levels:[1],per:1,theme:'animal',story:true,name:true,dash:false,bw:false,missions:2,mode:'line',acts:['noodle','cook','puzzle'],diff:2,seed:Date.now()%100000,custom:{}};
+let S={levels:[1],per:1,theme:'animal',story:true,name:true,dash:false,bw:false,missions:2,rand:{kinds:['line','A','B','C'],max:2},mode:'line',acts:['noodle','cook','puzzle'],diff:2,seed:Date.now()%100000,custom:{}};
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)S={...S,...s,seed:S.seed}}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 const allThemes=()=>({...THEMES,...S.custom});
@@ -761,8 +768,8 @@ const ACTS={
   fan:{type:'C',icon:'🪭',name:'접는 부채',desc:'색칠하고 오려서 접는 부채',cap:'색칠하고 오려서 부채를 만들어요',tip:'윗선은 난이도에 따라 곧은 선·물결·지그재그로 바뀌어요',fn:actFan}
 };
 function actSheet(pg){
-  const a=ACTS[pg.act],th=allThemes()[pg.theme]||THEMES.animal,c={r:rng(pg.seed),diff:S.diff,th,uid:pg.seed};
-  const sub=`${TYPES[a.type]} · ${esc(a.name)}${a.noDiff?'':` · <tspan fill="#ee6352">${DIFF[S.diff]}</tspan>`}${a.theme?' · '+esc(th.icon||'')+' '+esc(th.name):''}`;
+  const a=ACTS[pg.act],th=allThemes()[pg.theme]||THEMES.animal,c={r:rng(pg.seed),diff:pg.diff||S.diff,th,uid:pg.seed};
+  const sub=`${TYPES[a.type]} · ${esc(a.name)}${a.noDiff?'':` · <tspan fill="#ee6352">${DIFF[c.diff]}</tspan>`}${a.theme?' · '+esc(th.icon||'')+' '+esc(th.name):''}`;
   const top=`<text x="14" y="51" font-family="Jua" font-size="5.2" fill="#2b2b33">${esc(a.cap)}</text>`+(a.tip?`<text x="14" y="57" font-family="Gowun Dodum" font-size="3.1" fill="#666">${esc(a.tip)} · 가위 날은 몸 바깥쪽으로!</text>`:'');
   return `<svg viewBox="0 0 210 297" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(a.name)} 활동지"><rect width="210" height="297" fill="#fff"/>${header(sub)}${a.fn(c)}${top}</svg>`;
 }
@@ -771,6 +778,16 @@ function actSheet(pg){
 function pages(){
   const out=[],r=rng(S.seed+11),keys=Object.keys(allThemes());let k=0;
   const pick=()=>S.theme==='random'?keys[Math.floor(r()*keys.length)]:S.theme;
+  if(S.mode==='rand'){
+    const R=S.rand,lvMax={1:2,2:4,3:6}[R.max],pool=[];
+    if(R.kinds.includes('line'))for(let l=1;l<=lvMax;l++)pool.push({level:l});
+    Object.keys(ACTS).forEach(a=>{if(R.kinds.includes(ACTS[a].type))pool.push({act:a})});
+    if(!pool.length)return out;
+    let bag=[];
+    for(let i=0;i<S.per;i++){if(!bag.length)bag=shuffle(pool,r);const it=bag.pop();
+      out.push({...it,theme:pick(),seed:S.seed+(k++)*7919,diff:1+Math.floor(r()*R.max),rand:1})}
+    return out;
+  }
   if(S.mode==='act'){Object.keys(ACTS).filter(a=>S.acts.includes(a)).forEach(a=>{for(let i=0;i<S.per;i++)out.push({act:a,theme:pick(),seed:S.seed+(k++)*7919})});return out}
   [...S.levels].sort().forEach(lv=>{for(let i=0;i<S.per;i++){const th=S.theme==='random'?keys[Math.floor(r()*keys.length)]:S.theme;out.push({level:lv,theme:th,seed:S.seed+(k++)*7919})}});
   return out;
@@ -782,9 +799,13 @@ function renderControls(){
    +`<button class="chip" data-th="random" aria-pressed="${S.theme==='random'}">🎲 깜짝 테마</button>`;
   $('per').textContent=S.per;
   document.querySelectorAll('#mode button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===S.mode));
-  document.querySelectorAll('.line-only').forEach(e=>e.hidden=S.mode!=='line');
-  document.querySelectorAll('.act-only').forEach(e=>e.hidden=S.mode!=='act');
-  $('perLabel').textContent=S.mode==='act'?'활동마다 몇 장?':'단계마다 몇 장?';
+  document.querySelectorAll('[data-modes]').forEach(e=>e.hidden=!e.dataset.modes.split(' ').includes(S.mode));
+  if(!S.rand)S.rand={kinds:['line','A','B','C'],max:2};
+  $('kinds').innerHTML=[['line','✂️ 선 오리기'],['A','테마 자르기'],['B','오려 붙이기'],['C','색칠하고 오리기']].map(([k,n])=>`<button class="chip" data-k="${k}" aria-pressed="${S.rand.kinds.includes(k)}">${n}</button>`).join('');
+  $('rmax').innerHTML=[[1,'쉬움만'],[2,'보통까지'],[3,'어려움까지']].map(([k,n])=>`<button class="chip" data-x="${k}" aria-pressed="${S.rand.max===k}">${n}</button>`).join('');
+  $('again').textContent=S.mode==='rand'?'🎲 다시 뽑기':'🎲 새 모양으로 바꾸기';
+  $('perLabel').textContent=S.mode==='rand'?'몇 장 뽑을까요?':S.mode==='act'?'활동마다 몇 장?':'단계마다 몇 장?';
+  if(S.mode!=='rand'&&S.per>5)S.per=5;$('per').textContent=S.per;
   $('acts').innerHTML=Object.entries(TYPES).map(([t,tn])=>`<p class="grp">${tn}</p>`+Object.entries(ACTS).filter(([k,a])=>a.type===t).map(([k,a])=>`<button class="lv" data-act="${k}" aria-pressed="${S.acts.includes(k)}"><span class="ic">${a.icon}</span><span class="t">${a.name}<small>${a.desc}</small></span><span class="chk">✓</span></button>`).join('')).join('');
   $('diffs').innerHTML=Object.entries(DIFF).map(([d,n])=>`<button class="chip" data-d="${d}" aria-pressed="${S.diff===+d}">${n}</button>`).join('');
   ['Story','Name','Dash','Bw'].forEach(o=>$('o'+o).checked=S[o.toLowerCase()]);
@@ -794,7 +815,7 @@ function render(){
   if(!(S.theme in allThemes())&&S.theme!=='random')S.theme='animal';
   const P=pages();
   $('app').classList.toggle('bw',S.bw);
-  $('preview').innerHTML=P.length?P.map((p,i)=>`<div class="tag">${i+1}쪽 · ${p.act?TYPES[ACTS[p.act].type]+' · '+ACTS[p.act].name:p.level+'단계 · '+esc(allThemes()[p.theme].name)}${p.level===6&&!allThemes()[p.theme].sil?' (그림 모양이 없는 테마라 도형으로 나와요)':''}</div><div class="sheet">${sheet(p)}</div>`).join(''):`<p class="note">${S.mode==='act'?'활동':'단계'}를 하나 이상 골라 주세요.</p>`;
+  $('preview').innerHTML=P.length?P.map((p,i)=>`<div class="tag">${i+1}쪽 · ${p.rand?'🎲 ':''}${p.act?TYPES[ACTS[p.act].type]+' · '+ACTS[p.act].name:p.level+'단계 · '+esc(allThemes()[p.theme].name)}${p.level===6&&!allThemes()[p.theme].sil?' (그림 모양이 없는 테마라 도형으로 나와요)':''}</div><div class="sheet">${sheet(p)}</div>`).join(''):`<p class="note">${S.mode==='rand'?'뽑을 종류':S.mode==='act'?'활동':'단계'}를 하나 이상 골라 주세요.</p>`;
   $('count').textContent=`모두 ${P.length}장을 인쇄해요`;
   save();
 }
@@ -805,8 +826,10 @@ $('themes').addEventListener('click',e=>{const d=e.target.closest('[data-del]');
 $('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.mode=b.dataset.mode;renderControls();render();cheer()});
 $('acts').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;S.acts=S.acts.includes(a)?S.acts.filter(x=>x!==a):[...S.acts,a];renderControls();render()});
 $('diffs').addEventListener('click',e=>{const b=e.target.closest('[data-d]');if(!b)return;S.diff=+b.dataset.d;renderControls();render()});
+$('kinds').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k,K=S.rand.kinds;S.rand.kinds=K.includes(k)?K.filter(x=>x!==k):[...K,k];renderControls();render()});
+$('rmax').addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b)return;S.rand.max=+b.dataset.x;renderControls();render()});
 $('minus').onclick=()=>{S.per=Math.max(1,S.per-1);renderControls();render()};
-$('plus').onclick=()=>{S.per=Math.min(5,S.per+1);renderControls();render()};
+$('plus').onclick=()=>{S.per=Math.min(S.mode==='rand'?12:5,S.per+1);renderControls();render()};
 $('missions').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;S.missions=+b.dataset.m;renderControls();render()});
 ['Story','Name','Dash','Bw'].forEach(o=>$('o'+o).addEventListener('change',e=>{S[o.toLowerCase()]=e.target.checked;render()}));
 $('again').onclick=()=>{S.seed=Math.floor(Math.random()*1e6);render();cheer()};
