@@ -28,7 +28,7 @@ h1,h2,.jua{font-family:Jua,"Gowun Dodum",sans-serif;font-weight:400}
 .bubble{margin-left:auto;background:#fff;border-radius:18px;padding:12px 18px;max-width:340px;font-size:16px;position:relative;box-shadow:0 3px 0 rgba(0,0,0,.08)}
 .bubble b{color:var(--tom)}
 .wrap{display:grid;grid-template-columns:minmax(0,370px) minmax(0,1fr);gap:28px;padding:28px max(5vw,16px) 60px;max-width:1400px;margin:0 auto}
-@media(max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}.bubble{margin-left:0}}
+@media(max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}.bubble{margin-left:0}.go{grid-template-columns:1fr 1fr;padding:8px;gap:8px;bottom:8px;box-shadow:0 4px 20px rgba(0,0,0,.12)}.go .note{display:none}.go .warn{grid-column:1/-1}.go .btn{min-height:48px;font-size:17px}}
 .panel{display:flex;flex-direction:column;gap:22px;counter-reset:step}
 .box:not([hidden]){counter-increment:step}.box h2 .n::before{content:counter(step)}
 [hidden]{display:none!important}
