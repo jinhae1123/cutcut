@@ -111,7 +111,13 @@ summary{cursor:pointer;font-family:Jua,sans-serif;font-size:18px;min-height:32px
 
 <div class="wrap" id="app">
   <aside class="panel">
-    <div class="mode" id="mode" role="group" aria-label="활동지 종류"><button data-mode="line">✂️ 단계별<small>선·도형·그림</small></button><button data-mode="act">🎨 골라 만들기<small>놀이 활동 24가지</small></button><button data-mode="rand">🎲 랜덤 뽑기<small>무엇이 나올까?</small></button></div>
+    <div class="mode" id="mode" role="group" aria-label="활동지 종류"><button data-mode="line">✂️ 단계별<small>선·도형·그림</small></button><button data-mode="act">🎨 골라 만들기<small>놀이 활동 43가지</small></button><button data-mode="rand">🎲 랜덤 뽑기<small>무엇이 나올까?</small></button></div>
+    <section class="box" data-modes="act rand">
+      <h2><span class="n"></span>계절 고르기</h2>
+      <div class="chips" id="seasons"></div>
+      <button class="chip" id="seasonAll" style="margin-top:10px;border-style:dashed">이 계절 활동 모두 고르기</button>
+      <p class="note" data-modes="rand" style="margin-top:8px">계절을 고르면 그 계절 활동이 더 자주 나오고, 테마도 계절 테마로 바뀌어요.</p>
+    </section>
     <section class="box" data-modes="rand">
       <h2><span class="n"></span>어떤 활동에서 뽑을까요?</h2>
       <div class="chips" id="kinds"></div>
@@ -230,7 +236,7 @@ const shuffle=(a,r)=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.flo
 const poly=p=>'M'+p.map(q=>f(q[0])+' '+f(q[1])).join('L');
 SIL.star={n:'별을',d:poly(makeShape('star',50,46,42).pts)+'Z',x:'<circle cx="42" cy="46" r="2.5"/><circle cx="58" cy="46" r="2.5"/><path d="M44 56 Q50 61 56 56"/>'};
 
-let S={levels:[1],per:1,theme:'animal',story:true,name:true,dash:false,bw:false,missions:2,rand:{kinds:['line','A','B','C'],max:2},mode:'line',acts:['noodle','cook','puzzle'],diff:2,seed:Date.now()%100000,custom:{}};
+let S={levels:[1],per:1,theme:'animal',story:true,name:true,dash:false,bw:false,missions:2,season:'all',rand:{kinds:['line','A','B','C'],max:2},mode:'line',acts:['noodle','cook','puzzle'],diff:2,seed:Date.now()%100000,custom:{}};
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)S={...S,...s,seed:S.seed}}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 const allThemes=()=>({...THEMES,...S.custom});
@@ -774,14 +780,271 @@ function actSheet(pg){
   return `<svg viewBox="0 0 210 297" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(a.name)} 활동지"><rect width="210" height="297" fill="#fff"/>${header(sub)}${a.fn(c)}${top}</svg>`;
 }
 
+/* ===== 계절 확장 ===== */
+const SEASONS={spring:{n:'봄',i:'🌸'},summer:{n:'여름',i:'🍉'},autumn:{n:'가을',i:'🍂'},winter:{n:'겨울',i:'⛄'}};
+Object.assign(SIL,{
+  tulipS:{n:'튤립을',d:'M30 20 L40 34 L50 14 L60 34 L70 20 L72 50 Q70 66 54 68 L54 92 L46 92 L46 68 Q30 66 28 50Z',x:'<path d="M50 70 Q36 74 30 86 M50 76 Q62 78 68 88"/><path d="M40 36 Q42 54 50 62 M60 36 Q58 54 50 62"/>'},
+  melonS:{n:'수박을',d:'M8 30 L92 30 Q90 84 50 86 Q10 84 8 30Z',x:'<path d="M16 34 Q18 74 50 76 Q82 74 84 34"/>'+[[30,44],[44,52],[58,46],[70,40],[50,64],[36,60],[64,60]].map(p=>`<ellipse cx="${p[0]}" cy="${p[1]}" rx="1.6" ry="2.6"/>`).join('')},
+  leafM:{n:'단풍잎을',d:'M50 6 L58 26 L74 18 L70 38 L92 36 L80 52 L88 60 L62 62 L66 78 L54 70 L52 94 L48 94 L46 70 L34 78 L38 62 L12 60 L20 52 L8 36 L30 38 L26 18 L42 26Z',x:'<path d="M50 90 L50 24 M50 62 L24 46 M50 62 L76 46 M50 70 L36 68 M50 70 L64 68"/>'},
+  acornS:{n:'도토리를',d:'M14 40 Q14 20 50 18 Q86 20 86 40 Q86 46 78 46 Q78 82 50 90 Q22 82 22 46 Q14 46 14 40Z',x:'<path d="M18 38 H82 M26 30 L34 44 M40 24 L46 44 M56 24 L58 44 M70 28 L70 44"/><path d="M36 62 Q38 74 46 80"/>'},
+  persimS:{n:'감을',d:'M10 52 Q10 22 50 22 Q90 22 90 52 Q90 86 50 86 Q10 86 10 52Z',x:'<path d="M50 24 L38 16 L44 28 L30 30 L46 32 L50 40 L54 32 L70 30 L56 28 L62 16Z"/><path d="M24 50 Q26 64 34 72"/>'},
+  snowmanS:{n:'눈사람을',d:'M35.67 43.95 A20 20 0 1 1 64.33 43.95 A28 28 0 1 1 35.67 43.95Z',x:'<circle cx="43" cy="26" r="2"/><circle cx="57" cy="26" r="2"/><path d="M50 30 L60 33 L50 35Z"/><path d="M43 37 Q50 41 57 37"/><circle cx="50" cy="58" r="2.4"/><circle cx="50" cy="70" r="2.4"/><circle cx="50" cy="82" r="2.4"/><path d="M34 46 Q50 52 66 46 L66 52 Q50 58 34 52Z"/>'},
+  mittenS:{n:'장갑을',d:'M24 92 L24 40 Q24 10 52 10 Q76 10 76 40 L76 52 Q90 40 94 52 Q96 64 76 76 L76 92Z',x:'<path d="M24 80 H76"/><path d="M34 40 l6 6 l6 -6 l6 6 l6 -6 l6 6"/><path d="M38 58 h24"/>'},
+  treeS:{n:'트리를',d:'M50 6 L74 36 L62 36 L84 64 L66 64 L90 88 L56 88 L56 96 L44 96 L44 88 L10 88 L34 64 L16 64 L38 36 L26 36Z',x:'<circle cx="46" cy="30" r="2.4"/><circle cx="58" cy="52" r="2.4"/><circle cx="38" cy="58" r="2.4"/><circle cx="62" cy="78" r="2.4"/><circle cx="32" cy="80" r="2.4"/><path d="M30 46 Q50 54 66 44 M24 72 Q50 80 76 70"/>'}
+});
+SIL.sunS={n:'해님을',d:(()=>{const p=[];for(let i=0;i<24;i++){const a=-Math.PI/2+i*Math.PI/12,R=i%2?34:46;p.push([50+R*Math.cos(a),50+R*Math.sin(a)])}let m=0;p.forEach((q,i)=>{if(q[0]<p[m][0])m=i});return poly(p.slice(m).concat(p.slice(0,m)))+'Z'})(),x:'<circle cx="50" cy="50" r="24"/><circle cx="42" cy="46" r="2.4"/><circle cx="58" cy="46" r="2.4"/><path d="M41 56 Q50 63 59 56"/>'};
+Object.assign(THEMES,{
+  spring:{name:'봄 나들이',icon:'🌸',pairs:[['🐝','🌸','꿀벌이 벚꽃을 찾아가요'],['🦋','🌷','나비가 튤립에 앉아요'],['🐣','🐔','병아리가 엄마 닭에게 가요'],['🐞','🍀','무당벌레가 클로버에 가요'],['🧒','🪁','친구가 연을 날리러 가요'],['🐸','🌧️','개구리가 봄비를 맞으러 가요'],['🐰','🥕','토끼가 당근 밭에 가요'],['🐌','🌱','달팽이가 새싹을 만나요']],sil:['tulipS','butterfly','ladybug','bee']},
+  summer:{name:'신나는 여름',icon:'🍉',pairs:[['🏊','🏖️','친구가 바닷가로 헤엄쳐요'],['🍦','🧒','아이스크림이 친구에게 가요'],['🐢','🏝️','거북이가 섬으로 가요'],['⛵','🌊','돛단배가 파도를 타요'],['🐳','💦','고래가 물을 뿜으러 가요'],['🦀','🐚','꽃게가 조개를 찾아요'],['🍉','🧺','수박을 바구니에 담아요'],['☀️','🌻','해님이 해바라기를 만나요']],sil:['melonS','sunS','fish','shell']},
+  autumn:{name:'풍성한 가을',icon:'🍂',pairs:[['🐿️','🌰','다람쥐가 도토리를 주워요'],['🍂','🧺','낙엽이 바구니로 날아가요'],['🦔','🍎','고슴도치가 사과를 찾아요'],['🐦','🌾','참새가 벼 이삭을 찾아가요'],['🧒','🍁','친구가 단풍잎을 주우러 가요'],['🐻','🍯','곰이 겨울 준비를 해요'],['🎃','🏠','호박이 집으로 굴러가요'],['🦗','🌙','귀뚜라미가 달님에게 노래해요']],sil:['leafM','acornS','persimS','bear']},
+  winter:{name:'하얀 겨울',icon:'⛄',pairs:[['⛄','🧣','눈사람이 목도리를 찾아요'],['🐧','🧊','펭귄이 얼음집에 가요'],['🦌','🎁','사슴이 선물을 나르러 가요'],['🧒','🛷','친구가 썰매를 타러 가요'],['🦭','🐟','물범이 물고기를 잡아요'],['🎅','🎄','산타가 트리로 가요'],['🧤','❄️','장갑이 눈송이를 잡아요'],['🐿️','🌰','다람쥐가 겨울잠 자러 가요']],sil:['snowmanS','mittenS','treeS','star']}
+});
+const SEASON_THEME={spring:'spring',summer:'summer',autumn:'autumn',winter:'winter'};
+const sc=(k,s)=>`<g transform="scale(${s}) translate(-50 -50)">`;
+const carArt=col=>`<path d="M-20 6 L-20 -2 Q-19 -6 -14 -6 L-9 -14 L8 -14 L14 -6 Q20 -5 20 0 L20 6Z" fill="${col}"/><path d="M-7 -7 L-4 -12 L1 -12 L1 -7Z M4 -7 L4 -12 L7 -12 L11 -7Z" fill="#dff1fb"/><circle cx="-11" cy="7" r="4.4" fill="#2b2b33"/><circle cx="11" cy="7" r="4.4" fill="#2b2b33"/><circle cx="-11" cy="7" r="1.6" fill="#ccc"/><circle cx="11" cy="7" r="1.6" fill="#ccc"/>`;
+const shirt=(col,acc)=>`<path d="M-10 -16 L-22 -10 L-18 0 L-12 -3 L-12 18 L12 18 L12 -3 L18 0 L22 -10 L10 -16 Q0 -10 -10 -16Z" fill="${col}"/>${acc}`;
+Object.assign(ITEMS,{
+  tophat:IT(34,30,`<rect x="-16" y="10" width="32" height="5" rx="2" fill="#2b2b33"/><rect x="-10" y="-15" width="20" height="26" rx="2" fill="#2b2b33"/><rect x="-10" y="2" width="20" height="5" fill="#ee6352"/>`),
+  beanie:IT(36,32,`<path d="M-15 8 Q-15 -12 0 -12 Q15 -12 15 8Z" fill="#ee6352"/><rect x="-17" y="4" width="34" height="8" rx="3" fill="#fff" stroke="#f0c4be" stroke-width=".6"/><circle cy="-14" r="4.5" fill="#fff" stroke="#f0c4be" stroke-width=".6"/>`),
+  mittenI:IT(32,40,`<path d="M-10 18 L-10 -4 Q-10 -18 2 -18 Q12 -18 12 -4 L12 3 Q18 -3 20 3 Q20 8 12 13 L12 18Z" fill="#3fa7d6"/><rect x="-11" y="14" width="24" height="6" rx="2" fill="#fff" stroke="#cfd8e3" stroke-width=".6"/><path d="M-4 -6 l3 3 l3 -3 l3 3" fill="none" stroke="#fff" stroke-width="1.2"/>`),
+  scarfI:IT(40,34,`<path d="M-18 -10 Q0 -2 18 -10 L18 -2 Q0 6 -18 -2Z" fill="#ee6352"/><path d="M6 -4 L12 16 L4 18 L-1 -2Z" fill="#e04c3c"/><path d="M5 17 v3 M8 16 v3 M11 15 v3" stroke="#e04c3c" stroke-width="1.2"/><path d="M-12 -7 v5 M-4 -5 v5" stroke="#fff" stroke-width="1.6" opacity=".7"/>`),
+  broom:IT(30,46,`<path d="M8 -22 L-2 6" stroke="#8b5e3c" stroke-width="3" stroke-linecap="round"/><path d="M-6 4 L4 8 L-2 22 L-16 16Z" fill="#e8c06a"/><path d="M-10 10 L-14 18 M-6 12 L-9 20 M-2 13 L-4 21" stroke="#c99a3a" stroke-width="1"/>`),
+  persimmon:IT(32,34,`<circle cy="3" r="14" fill="#f5862f"/><path d="M0 -10 L-7 -14 L-3 -9 L-9 -5 L0 -7 L9 -5 L3 -9 L7 -14Z" fill="#5a8f3c"/><ellipse cx="-6" cy="-1" rx="3" ry="4" fill="#ffb070"/>`),
+  acorn:IT(30,42,`<path d="M-11 -2 Q-11 18 0 20 Q11 18 11 -2Z" fill="#c8874a"/><path d="M-14 -2 Q-14 -14 0 -14 Q14 -14 14 -2Z" fill="#8b5e3c"/><path d="M0 -14 v-5" stroke="#8b5e3c" stroke-width="2.4" stroke-linecap="round"/><path d="M-10 -8 L10 -8 M-12 -4 L12 -4" stroke="#6f4a2e" stroke-width=".8"/>`),
+  maple:IT(40,40,`${sc(0,.42)}<path d="${SIL.leafM.d}" fill="#e8553f"/><path d="M50 90 L50 24 M50 62 L24 46 M50 62 L76 46" stroke="#c43d2b" stroke-width="2" fill="none"/></g>`),
+  ginkgo:IT(36,36,`<path d="M0 16 L0 4" stroke="#c9a227" stroke-width="2"/><path d="M0 4 Q-18 -2 -16 -14 Q-8 -18 0 -16 Q8 -18 16 -14 Q18 -2 0 4Z" fill="#ffd23f"/><path d="M0 4 L0 -15 M0 4 L-8 -14 M0 4 L8 -14" stroke="#e8b400" stroke-width=".8"/>`),
+  butterflyI:IT(40,36,`${sc(0,.42)}<path d="${SIL.butterfly.d}" fill="#ffb3c7"/><path d="M50 30 L50 64" stroke="#5d6270" stroke-width="4" stroke-linecap="round"/><circle cx="30" cy="28" r="6" fill="#fff"/><circle cx="70" cy="28" r="6" fill="#fff"/><circle cx="34" cy="68" r="4" fill="#ff8fb0"/><circle cx="66" cy="68" r="4" fill="#ff8fb0"/></g>`),
+  ladybugI:IT(32,36,`${sc(0,.38)}<path d="${SIL.ladybug.d}" fill="#e8453c"/><path d="M38 24 Q50 30 62 24 Q60 14 50 14 Q40 14 38 24Z" fill="#2b2b33"/><path d="M50 28 L50 86" stroke="#2b2b33" stroke-width="2"/>${[[34,46],[66,46],[32,68],[68,68]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="6" fill="#2b2b33"/>`).join('')}</g>`),
+  beeI:IT(36,34,`${sc(0,.4)}<path d="${SIL.bee.d}" fill="#ffd23f"/><path d="M18 46 Q50 38 70 42 Q50 30 34 42Z" fill="#eaf6ff"/><path d="M42 46 Q40 64 44 80 M60 46 Q62 64 58 80" stroke="#2b2b33" stroke-width="5"/><circle cx="76" cy="58" r="2.6" fill="#2b2b33"/></g>`),
+  juice:IT(20,42,`<rect x="-9" y="-14" width="18" height="34" rx="3" fill="#ffb347"/><rect x="-6" y="-20" width="12" height="7" rx="1" fill="#fff" stroke="#ddd" stroke-width=".6"/><circle cy="4" r="5" fill="#fff" opacity=".85"/><circle cy="4" r="3" fill="#f5862f"/>`),
+  capH:IT(40,24,`<path d="M-16 6 Q-16 -12 0 -12 Q14 -12 14 6Z" fill="#3fa7d6"/><path d="M10 4 L24 6 Q24 10 12 9Z" fill="#2f86bd"/><circle cx="-1" cy="-12" r="2" fill="#2f86bd"/>`),
+  tshirt:IT(46,36,shirt('#ffd23f',`<path d="${hp(5)}" fill="#ee6352" transform="translate(0 4)"/>`)),
+  sweater:IT(46,36,shirt('#5bb36a',`<path d="M-12 4 H12 M-12 10 H12" stroke="#fff" stroke-width="2" stroke-dasharray="3 2"/><path d="M-6 -14 Q0 -9 6 -14" fill="none" stroke="#3f8f4a" stroke-width="2"/>`)),
+  pants:IT(30,36,`<path d="M-12 -16 L12 -16 L14 18 L3 18 L0 -2 L-3 18 L-14 18Z" fill="#3f6fb5"/><path d="M-12 -12 H12" stroke="#2f5a99" stroke-width="1.4"/>`),
+  skirt:IT(38,28,`<path d="M-9 -12 L9 -12 L18 13 Q0 17 -18 13Z" fill="#ff8fb8"/><path d="M-9 -12 H9" stroke="#e86f9c" stroke-width="2"/><path d="M-4 -8 L-8 12 M4 -8 L8 12" stroke="#e86f9c" stroke-width=".8"/>`),
+  carR:IT(44,26,carArt('#ee6352')),carB:IT(44,26,carArt('#3fa7d6')),carY:IT(44,26,carArt('#ffd23f')),
+  truck:IT(46,28,`<rect x="-22" y="-12" width="26" height="18" rx="2" fill="#5bb36a"/><path d="M4 -6 L14 -6 L21 1 L21 6 L4 6Z" fill="#f39237"/><path d="M8 -4 L13 -4 L17 0 L8 0Z" fill="#dff1fb"/><circle cx="-13" cy="8" r="4.4" fill="#2b2b33"/><circle cx="13" cy="8" r="4.4" fill="#2b2b33"/>`),
+  busI:IT(46,28,`<rect x="-22" y="-13" width="44" height="21" rx="4" fill="#ffd23f"/>${[-17,-7,3].map(x=>`<rect x="${x}" y="-9" width="8" height="7" rx="1" fill="#dff1fb"/>`).join('')}<rect x="13" y="-9" width="6" height="13" rx="1" fill="#dff1fb"/><circle cx="-12" cy="9" r="4.2" fill="#2b2b33"/><circle cx="12" cy="9" r="4.2" fill="#2b2b33"/>`),
+  pig:IT(36,36,`<path d="M-12 -10 L-14 -20 L-5 -14Z M12 -10 L14 -20 L5 -14Z" fill="#ff9aae"/><circle r="15" fill="#ffb3c1"/><ellipse cy="4" rx="7" ry="5" fill="#ff8fa3"/><circle cx="-2.5" cy="4" r="1.3" fill="#c0506a"/><circle cx="2.5" cy="4" r="1.3" fill="#c0506a"/><circle cx="-6" cy="-4" r="1.8" fill="#2b2b33"/><circle cx="6" cy="-4" r="1.8" fill="#2b2b33"/>`),
+  chick:IT(32,40,`<circle cy="5" r="13" fill="#ffd23f"/><circle cy="-9" r="9" fill="#ffd23f"/><path d="M8 -9 L14 -7 L8 -5Z" fill="#f39237"/><circle cx="3" cy="-11" r="1.5" fill="#2b2b33"/><path d="M-6 4 Q-14 0 -10 10Z" fill="#ffe58a"/><path d="M-4 18 v3 M4 18 v3" stroke="#f39237" stroke-width="1.6"/>`),
+  sheep:IT(40,34,`${[[-10,-2,9],[0,-6,10],[10,-2,9],[-6,6,9],[6,6,9]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="${p[2]}" fill="#fff" stroke="#d5d9df" stroke-width=".8"/>`).join('')}<ellipse cx="15" cy="-2" rx="6" ry="7" fill="#4a4a52"/><circle cx="17" cy="-4" r="1.2" fill="#fff"/><path d="M-8 13 v5 M6 13 v5" stroke="#4a4a52" stroke-width="2.4" stroke-linecap="round"/>`),
+  cow:IT(38,36,`<path d="M-12 -12 Q-16 -20 -10 -18 M12 -12 Q16 -20 10 -18" stroke="#c9a46b" stroke-width="3" stroke-linecap="round" fill="none"/><ellipse cy="-2" rx="15" ry="14" fill="#fff" stroke="#d5d9df" stroke-width=".8"/><path d="M-12 -10 Q-6 -12 -6 -4 Q-12 -2 -14 -6Z M8 -12 Q14 -10 13 -4 Q8 -4 7 -8Z" fill="#2b2b33"/><ellipse cy="9" rx="10" ry="6" fill="#ffc2cc"/><circle cx="-3" cy="9" r="1.4" fill="#c0506a"/><circle cx="3" cy="9" r="1.4" fill="#c0506a"/><circle cx="-6" cy="-3" r="1.8" fill="#2b2b33"/><circle cx="6" cy="-3" r="1.8" fill="#2b2b33"/>`),
+  bucket:IT(36,36,`<path d="M-12 -6 L12 -6 L9 18 L-9 18Z" fill="#3fa7d6"/><path d="M-12 -6 Q0 -22 12 -6" fill="none" stroke="#2f86bd" stroke-width="1.6"/><rect x="-13" y="-8" width="26" height="4" rx="2" fill="#2f86bd"/><path d="M14 -10 L18 12" stroke="#ffd23f" stroke-width="2.4" stroke-linecap="round"/><path d="M15 10 L21 10 L20 18 L16 18Z" fill="#ffd23f"/>`),
+  beachball:IT(32,32,`<circle r="15" fill="#fff" stroke="#e0e0e0" stroke-width=".6"/><path d="M0 -15 Q-12 0 0 15 Q-15 12 -15 0 Q-15 -12 0 -15Z" fill="#ee6352"/><path d="M0 -15 Q12 0 0 15 Q15 12 15 0 Q15 -12 0 -15Z" fill="#3fa7d6"/><path d="M0 -15 Q-4 0 0 15 Q4 0 0 -15Z" fill="#ffd23f"/>`),
+  parasol:IT(40,48,`<path d="M0 -14 L2 24" stroke="#8b5e3c" stroke-width="2" stroke-linecap="round"/><path d="M-20 -4 Q-18 -22 0 -22 Q18 -22 20 -4 Q15 -8 10 -4 Q5 -8 0 -4 Q-5 -8 -10 -4 Q-15 -8 -20 -4Z" fill="#ee6352"/><path d="M-10 -4 Q-8 -20 0 -22 Q8 -20 10 -4 Q5 -8 0 -4 Q-5 -8 -10 -4Z" fill="#fff"/>`)
+});
+function pasteTyped(c,scene,slots,tip){const keys=slots.map(s=>pk(s[2],c.r));return scene+keys.map((k,i)=>spot(k,slots[i][0],slots[i][1])).join('')+tray(keys,c,tip)}
+const snow=(c,n,y0=62,y1=190)=>[...Array(n)].map(()=>`<circle cx="${f(rn(c.r,14,196))}" cy="${f(rn(c.r,y0,y1))}" r="${f(rn(c.r,.8,2))}" fill="#fff"/>`).join('');
+
+/* ===== 테마 자르기: 신규 ===== */
+function actLion(c){
+  const m=pk([['#d9822b','#c56f1f'],['#b85c2a','#a34d20'],['#e3a33a','#cf8f2a']],c.r),n=6+Math.floor(c.r()*2);
+  const fr=fringe(c,58,152,146,295,n,m);
+  let mane='';for(let i=0;i<14;i++){const a=i/14*Math.PI*2;mane+=`<circle cx="${f(105+44*Math.cos(a))}" cy="${f(104+44*Math.sin(a))}" r="14" fill="${m[i%2]}"/>`}
+  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="${pk(['#fff6dc','#eef8e6','#fdeee4'],c.r)}"/>
+  <path d="M14 300 Q20 270 14 240 M196 300 Q190 268 198 236" stroke="#9ccf6e" stroke-width="5" fill="none" stroke-linecap="round"/>
+  ${fr.fill}${mane}<circle cx="105" cy="104" r="44" fill="${m[0]}"/>
+  <circle cx="80" cy="80" r="8" fill="#f6c453"/><circle cx="130" cy="80" r="8" fill="#f6c453"/><circle cx="105" cy="106" r="29" fill="#f6c453"/>
+  <circle cx="95" cy="100" r="3" fill="#2b2b33"/><circle cx="115" cy="100" r="3" fill="#2b2b33"/><path d="M100 110 L110 110 L105 116Z" fill="#7a4a2a"/>
+  <path d="M105 116 Q100 122 95 119 M105 116 Q110 122 115 119" fill="none" stroke="#7a4a2a" stroke-width="1.3" stroke-linecap="round"/>
+  <ellipse cx="86" cy="112" rx="4" ry="2.4" fill="#ffad8a"/><ellipse cx="124" cy="112" rx="4" ry="2.4" fill="#ffad8a"/>
+  ${fr.cuts}${emo(50,288,6,'✂️')}`;
+}
+function actJelly(c){
+  const col=pk([['#ffc0d6','#ffd6e5'],['#c8d8ff','#dde7ff'],['#d8c8ff','#e8ddff']],c.r),n=7+Math.floor(c.r()*3);
+  const fr=fringe(c,58,152,146,295,n,col);
+  let sc2='';const k=6;for(let i=k-1;i>=0;i--){const a=50+i*110/k,b=a+110/k;sc2+=` Q${f((a+b)/2)} 158 ${f(a)} 146`}
+  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="#123b5e"/>
+  ${[...Array(9)].map(()=>`<circle cx="${f(rn(c.r,16,194))}" cy="${f(rn(c.r,70,290))}" r="${f(rn(c.r,1.5,4))}" fill="none" stroke="#7fc8ef" stroke-width=".9"/>`).join('')}
+  ${fr.fill}
+  <path d="M50 146 Q50 70 105 70 Q160 70 160 146${sc2}Z" fill="${col[0]}"/>
+  <path d="M66 110 Q70 84 96 80" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+  <circle cx="92" cy="116" r="3.4" fill="#2b2b33"/><circle cx="118" cy="116" r="3.4" fill="#2b2b33"/><path d="M98 126 Q105 132 112 126" fill="none" stroke="#2b2b33" stroke-width="1.4" stroke-linecap="round"/>
+  <ellipse cx="82" cy="126" rx="5" ry="3" fill="#ff8fb0" opacity=".7"/><ellipse cx="128" cy="126" rx="5" ry="3" fill="#ff8fb0" opacity=".7"/>
+  ${fr.cuts}${emo(50,288,6,'✂️')}`;
+}
+function actWillow(c){
+  const g=pk([['#a8d98a','#94cf74'],['#b7e08f','#9fd27a'],['#9ed6a0','#86c98a']],c.r),n=7+Math.floor(c.r()*3);
+  const fr=fringe(c,30,180,124,295,n,g,(a,b)=>{let s='';for(let j=16;j<156;j+=18){const x=(a[j][0]+b[j][0])/2,y=a[j][1];s+=`<ellipse cx="${f(x-2)}" cy="${f(y)}" rx="1.6" ry="3.2" fill="#6fb35a" transform="rotate(30 ${f(x-2)} ${f(y)})"/>`}return s});
+  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="${pk(['#eef8ff','#fff5f8'],c.r)}"/>
+  <circle cx="${f(rn(c.r,24,60))}" cy="80" r="10" fill="#ffd23f"/>
+  ${[...Array(6)].map(()=>tr(rn(c.r,16,194),rn(c.r,70,118),`<path d="M0 -3 Q3 -6 4 -2 Q6 1 2 2 Q0 5 -2 2 Q-6 1 -4 -2 Q-3 -6 0 -3Z" fill="#ffc0d6"/>`)).join('')}
+  <rect x="98" y="62" width="14" height="30" fill="#8b6a4a"/>
+  ${fr.fill}
+  <path d="M24 126 Q22 96 52 92 Q66 72 105 74 Q144 72 158 92 Q188 96 186 126Z" fill="${g[1]}"/>
+  ${fr.cuts}${emo(24,288,6,'✂️')}`;
+}
+function actRice(c){
+  const n=6+Math.floor(c.r()*3),x0=24,x1=186,w=(x1-x0)/n;
+  const fr=fringe(c,x0,x1,154,295,n,['#e8d48a','#dcc570']);
+  let heads='';for(let i=0;i<n;i++){const cx=x0+w*(i+.5),bend=c.r()<.5?-1:1;heads+=tr(cx,150,`<path d="M0 0 Q${4*bend} -10 ${10*bend} -16" fill="none" stroke="#c9a227" stroke-width="1.4"/>${[...Array(5)].map((_,j)=>`<ellipse cx="${f((2+j*2)*bend)}" cy="${f(-3-j*3)}" rx="2.4" ry="1.5" fill="#f2c94c" transform="rotate(${-40*bend} ${f((2+j*2)*bend)} ${f(-3-j*3)})"/>`).join('')}`)}
+  const fly=()=>tr(rn(c.r,30,180),rn(c.r,76,116),`<path d="M-8 0 H8" stroke="#ee6352" stroke-width="1.8" stroke-linecap="round"/><ellipse cx="-2" cy="-3" rx="4" ry="1.6" fill="#fff" stroke="#ccc" stroke-width=".4"/><ellipse cx="2" cy="-3" rx="4" ry="1.6" fill="#fff" stroke="#ccc" stroke-width=".4"/>`);
+  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="${pk(['#fff3e0','#eef6ff'],c.r)}"/>
+  <circle cx="${f(rn(c.r,130,180))}" cy="82" r="11" fill="#ffb347"/>${fly()}${fly()}
+  <path d="M8 152 H202 V301 H8Z" fill="#f3e6b8"/>
+  ${fr.fill}${heads}
+  ${fr.cuts}${emo(18,288,6,'✂️')}`;
+}
+function actScarf(c){
+  const s=pk([['#ee6352','#fff'],['#3fa7d6','#fff'],['#5bb36a','#ffd23f'],['#b78cf2','#fff']],c.r),n=5+Math.floor(c.r()*2);
+  const fr=fringe(c,74,136,150,295,n,s);
+  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="#e4eef7"/>${snow(c,26,64,296)}
+  ${kid(105,96,pk(['#4a3328','#2b2b33','#c0763a'],c.r),'#7f8fa6',pk(SKIN,c.r))}
+  <path d="M76 76 Q76 58 105 58 Q134 58 134 76 Q105 66 76 76Z" fill="${s[0]}"/><circle cx="105" cy="56" r="5" fill="#fff"/>
+  ${fr.fill}
+  <path d="M72 124 Q105 136 138 124 L140 138 Q105 152 70 138Z" fill="${s[0]}"/><path d="M80 128 v10 M92 131 v11 M104 132 v12 M116 131 v11 M128 128 v10" stroke="${s[1]}" stroke-width="2" opacity=".8"/>
+  ${fr.cuts}${emo(66,288,6,'✂️')}`;
+}
+function actMelon(c){
+  const n=6+Math.floor(c.r()*3);
+  const fr=fringe(c,26,184,120,295,n,['none']);
+  let seeds='';for(let i=0;i<16;i++){const a=rn(c.r,.15,.85)*Math.PI,d=rn(c.r,.3,.85);seeds+=`<ellipse cx="${f(105-70*d*Math.cos(a))}" cy="${f(196-58*d*Math.sin(a))}" rx="1.4" ry="2.4" fill="#2b2b33"/>`}
+  return `<rect x="8" y="61" width="194" height="240" rx="6" fill="${pk(['#e9f8ff','#fff8e6'],c.r)}"/>
+  <circle cx="176" cy="82" r="11" fill="#ffd23f"/>
+  <ellipse cx="105" cy="202" rx="94" ry="12" fill="#e3e9f2"/>
+  <path d="M22 198 A83 74 0 0 1 188 198Z" fill="#3f9b4f"/><path d="M28 198 A77 68 0 0 1 182 198Z" fill="#e9f7d8"/><path d="M33 198 A72 63 0 0 1 177 198Z" fill="#f2545b"/>${seeds}
+  ${fr.cuts}${emo(20,288,6,'✂️')}`;
+}
+/* ===== 오려 붙이기: 신규 ===== */
+function actSnowman(c){
+  return pasteTyped(c,`<rect x="8" y="56" width="194" height="142" rx="6" fill="${pk(['#dfeaf5','#e7e3f3'],c.r)}"/>${snow(c,22)}
+  <ellipse cx="105" cy="192" rx="96" ry="12" fill="#fff"/>
+  <path d="M72 150 L40 134 M138 150 L168 132" stroke="#8b5e3c" stroke-width="2.4" stroke-linecap="round"/>
+  <circle cx="105" cy="160" r="34" fill="#fff" stroke="#cfdbe8" stroke-width="1.2"/><circle cx="105" cy="110" r="22" fill="#fff" stroke="#cfdbe8" stroke-width="1.2"/>
+  <circle cx="97" cy="106" r="2.2" fill="#2b2b33"/><circle cx="113" cy="106" r="2.2" fill="#2b2b33"/><path d="M105 110 L116 113 L105 115Z" fill="#f39237"/><path d="M98 119 Q105 123 112 119" fill="none" stroke="#2b2b33" stroke-width="1.2" stroke-linecap="round"/>
+  <circle cx="105" cy="150" r="2.4" fill="#2b2b33"/><circle cx="105" cy="164" r="2.4" fill="#2b2b33"/><circle cx="105" cy="178" r="2.4" fill="#2b2b33"/>`,
+  [[105,86,['tophat','beanie']],[105,134,['scarfI']],[40,124,['mittenI','broom']]],'굵은 선을 따라 오려서 눈사람에게 붙여 주세요');
+}
+function actAutumnTree(c){
+  const leaf=pk(['#f39237','#e8553f','#f2c94c'],c.r);
+  return pasteScene(c,`<rect x="8" y="56" width="194" height="142" rx="6" fill="${pk(['#fff3e0','#eef6ff'],c.r)}"/>
+  <rect x="8" y="180" width="194" height="18" fill="#e8d4a8"/><rect x="96" y="128" width="18" height="56" rx="3" fill="#8b5e3c"/>
+  <path d="M105 150 L84 134 M105 140 L128 124" stroke="#8b5e3c" stroke-width="4" stroke-linecap="round"/>
+  ${[[105,104,48],[66,118,30],[144,116,30],[84,82,28],[128,82,28]].map(q=>`<circle cx="${q[0]}" cy="${q[1]}" r="${q[2]}" fill="${leaf}"/>`).join('')}
+  ${[...Array(8)].map(()=>`<ellipse cx="${f(rn(c.r,16,194))}" cy="${f(rn(c.r,182,194))}" rx="3" ry="1.6" fill="${pk(['#f39237','#e8553f','#f2c94c','#c8874a'],c.r)}"/>`).join('')}`,
+  [[74,104],[136,100],[106,140]],['persimmon','apple','acorn','maple','ginkgo'],'굵은 선을 따라 오려서 나무에 열매와 잎을 붙여요');
+}
+function actGarden(c){
+  return pasteScene(c,`<rect x="8" y="56" width="194" height="142" rx="6" fill="${pk(['#eaf7ff','#fff5f8'],c.r)}"/>
+  <circle cx="${f(rn(c.r,24,186))}" cy="74" r="9" fill="#ffd23f"/>
+  <path d="M8 160 Q60 150 105 158 T202 156 V198 H8Z" fill="#a57b52"/><path d="M8 168 H202" stroke="#8b6340" stroke-width="1" stroke-dasharray="6 4"/>
+  ${[24,186].map(x=>`<path d="M${x} 160 V120" stroke="#5bb36a" stroke-width="2"/>${tr(x,116,flowerHead(Math.floor(c.r()*3),pk(['#ffd23f','#ff8fb8','#fff'],c.r),1))}`).join('')}`,
+  [[60,132],[105,118],[150,132]],['tulip','daisy','bloom','butterflyI','ladybugI','beeI'],'굵은 선을 따라 오려서 봄 꽃밭을 꾸며요');
+}
+function actFridge(c){
+  const col=pk(['#dff1fb','#fde8e8','#e8f6e8'],c.r);
+  return pasteScene(c,`<rect x="8" y="56" width="194" height="142" rx="6" fill="#fff8ef"/>
+  <rect x="40" y="60" width="130" height="134" rx="8" fill="${col}" stroke="#b9c6d3" stroke-width="2"/><rect x="48" y="68" width="114" height="118" rx="4" fill="#fff"/>
+  <rect x="48" y="124" width="114" height="3" fill="#cfd8e3"/><path d="M170 70 L196 76 L196 186 L170 192Z" fill="${col}" stroke="#b9c6d3" stroke-width="2"/><rect x="188" y="118" width="3" height="20" rx="1.5" fill="#9aa7b4"/>`,
+  [[76,96],[134,96],[105,156]],['milk','cheese','apple','carrot','ptomato','juice','egg'],'굵은 선을 따라 오려서 냉장고에 정리해요');
+}
+function actDress(c){
+  const sk=pk(SKIN,c.r),hair=pk(['#4a3328','#2b2b33','#c0763a'],c.r);
+  return pasteTyped(c,`<rect x="8" y="56" width="194" height="142" rx="6" fill="${pk(['#f6eefe','#eef8ff','#fff3e6'],c.r)}"/>
+  <path d="M78 124 L62 156 M132 124 L148 156" stroke="${sk}" stroke-width="7" stroke-linecap="round"/>
+  <path d="M98 176 L97 195 M112 176 L113 195" stroke="${sk}" stroke-width="7" stroke-linecap="round"/>
+  <rect x="84" y="120" width="42" height="38" rx="8" fill="#fff" stroke="#d9d9e3" stroke-width="1"/><rect x="88" y="158" width="34" height="18" rx="4" fill="#fff" stroke="#d9d9e3" stroke-width="1"/>
+  ${kid(105,100,hair,null,sk,false)}`,
+  [[105,74,['capH','beanie','tophat']],[105,140,['tshirt','sweater']],[105,174,['pants','skirt']]],'굵은 선을 따라 옷을 오려서 친구에게 입혀요');
+}
+function actParking(c){
+  return pasteScene(c,`<rect x="8" y="56" width="194" height="142" rx="6" fill="#e8eef2"/>
+  <rect x="18" y="80" width="174" height="108" rx="6" fill="#6b717a"/>
+  ${[22,77,132,187].map(x=>`<rect x="${x-1.5}" y="92" width="3" height="76" fill="#fff"/>`).join('')}<rect x="20" y="168" width="170" height="3" fill="#fff"/>
+  ${[1,2,3].map((n,i)=>`<text x="${50+i*55}" y="104" font-family="Jua" font-size="7" text-anchor="middle" fill="#ffd23f">${n}</text>`).join('')}
+  <rect x="18" y="62" width="40" height="14" rx="3" fill="#3fa7d6"/><text x="38" y="72" font-family="Jua" font-size="6" text-anchor="middle" fill="#fff">P 주차장</text>`,
+  [[50,138],[105,138],[160,138]],['carR','carB','carY','truck','busI'],'굵은 선을 따라 오려서 주차 칸에 붙여요');
+}
+function actFarm(c){
+  return pasteScene(c,`<rect x="8" y="56" width="194" height="142" rx="6" fill="#eaf7ff"/>
+  <path d="M8 132 Q70 120 130 130 T202 126 V198 H8Z" fill="#a8d98a"/>
+  <path d="M150 128 L150 86 L172 70 L194 86 L194 128Z" fill="#e8553f"/><rect x="164" y="100" width="16" height="28" fill="#fff"/><path d="M164 100 L180 128 M180 100 L164 128" stroke="#e8553f" stroke-width="1.6"/>
+  ${[20,40,60,80,100,120].map(x=>`<rect x="${x}" y="114" width="4" height="22" fill="#d9a066"/>`).join('')}<rect x="16" y="118" width="112" height="3" fill="#d9a066"/><rect x="16" y="128" width="112" height="3" fill="#d9a066"/>`,
+  [[54,160],[108,150],[160,166]],['pig','chick','sheep','cow'],'굵은 선을 따라 동물을 오려서 농장에 데려다 줘요');
+}
+function actBeach(c){
+  return pasteScene(c,`<rect x="8" y="56" width="194" height="142" rx="6" fill="#e6f6ff"/>
+  <circle cx="${f(rn(c.r,30,180))}" cy="72" r="9" fill="#ffd23f"/>
+  <path d="M8 94 H202 V130 Q150 120 105 130 T8 126Z" fill="#7fc8ef"/><path d="M8 126 Q60 134 105 128 T202 130 V198 H8Z" fill="#f6dfa8"/>
+  ${[...Array(5)].map(()=>`<path d="M${f(rn(c.r,16,190))} ${f(rn(c.r,104,118))} q3 -3 6 0 q3 -3 6 0" fill="none" stroke="#fff" stroke-width="1"/>`).join('')}`,
+  [[56,156],[108,148],[160,160]],['bucket','beachball','clam','starfish','parasol'],'굵은 선을 따라 오려서 바닷가를 꾸며요');
+}
+/* ===== 색칠하고 오리기: 신규 ===== */
+function silLine(key,tx,ty,k){const s=SIL[key];return `<g transform="translate(${f(tx)} ${f(ty)}) scale(${k})" fill="none" stroke="#8a8f98" stroke-width="${f(.55/k)}" stroke-linejoin="round"><path d="${s.d}"/>${s.x}</g>`}
+function actFishing(c){
+  const F='M-27 0 Q-27 -15 -5 -15 Q10 -15 16 -6 L31 -17 L31 17 L16 6 Q10 15 -5 15 Q-27 15 -27 0Z';
+  let s='';[[57,98],[153,98],[57,162],[153,162],[57,226],[153,226]].forEach(([x,y])=>{const k=1.45,flip=c.r()<.5,pat=pk(['<path d="M-4 -12 Q2 0 -4 12 M6 -10 Q12 0 6 10"/>','<circle cx="0" cy="-4" r="2"/><circle cx="8" cy="3" r="2"/><circle cx="-2" cy="6" r="2"/>','<path d="M-6 -6 a3 3 0 0 0 6 0 a3 3 0 0 0 6 0 M-6 2 a3 3 0 0 0 6 0 a3 3 0 0 0 6 0"/>'],c.r);
+    s+=`<g transform="translate(${x} ${y}) scale(${flip?-k:k} ${k})"><g fill="none" stroke="#8a8f98" stroke-width="${f(.55/k)}">${pat}<circle cx="-18" cy="-3" r="2.4"/><path d="M22 -10 L22 10"/></g><path d="${F}" fill="none" stroke="#2b2b33" stroke-width="${f(1.2/k)}" stroke-linejoin="round"${S.dash?` stroke-dasharray="${f(3.2/k)} ${f(2/k)}"`:''}/><circle cx="-24" cy="0" r="1.6" fill="#fff" stroke="#ee6352" stroke-width="${f(.6/k)}"/></g>`});
+  return s+`<text x="105" y="262" font-family="Gowun Dodum" font-size="3.4" text-anchor="middle" fill="#888">입 쪽 빨간 점에 클립을 끼우고, 자석 낚싯대로 물고기를 낚아요</text>`;
+}
+const MOTIF={spring:['tulipS','butterfly','bee'],summer:['melonS','sunS','fish'],autumn:['leafM','acornS','persimS'],winter:['snowmanS','mittenS','treeS']};
+function actGarland(c){
+  const se=S.season!=='all'?S.season:pk(Object.keys(MOTIF),c.r),keys=MOTIF[se];
+  let s='';[[40,64],[105,64],[170,64],[40,164],[105,164],[170,164]].forEach(([x,y],i)=>{
+    const w=56,top=y,yt=y+10,h=c.diff===1?70:76;let d=`M${x-w/2} ${top} H${x+w/2} V${yt}`;
+    if(c.diff===1)d+=` L${x} ${yt+h} Z`;
+    else if(c.diff===2)d+=` V${yt+h-16} Q${x+w/4} ${yt+h} ${x} ${yt+h-10} Q${x-w/4} ${yt+h} ${x-w/2} ${yt+h-16} Z`;
+    else d+=` V${yt+h-14} L${x+w/4} ${yt+h-4} L${x} ${yt+h-14} L${x-w/4} ${yt+h-4} L${x-w/2} ${yt+h-14} Z`;
+    s+=fold(x-w/2,yt,x+w/2,yt)+lbl(x,top+6.6,'접어서 풀칠',3)+silLine(keys[i%3],x-17,yt+6,.34)+cutp(d)});
+  return s+`<text x="105" y="262" font-family="Gowun Dodum" font-size="3.4" text-anchor="middle" fill="#888">${SEASONS[se].i} ${SEASONS[se].n} 가랜드 · 윗부분을 접어 끈에 끼우고 풀칠해요</text>`;
+}
+function actBookmark(c){
+  const keys=pickSil(c.th,c.r,4);let s='';
+  [33,81,129,177].forEach((x,i)=>{const w=40,y0=66,y1=246;const top=c.diff===1?`M${x-w/2} ${y0+8} Q${x-w/2} ${y0} ${x-w/2+8} ${y0} H${x+w/2-8} Q${x+w/2} ${y0} ${x+w/2} ${y0+8}`:c.diff===2?`M${x-w/2} ${y0+20} A${w/2} ${w/2} 0 0 1 ${x+w/2} ${y0+20}`:`M${x-w/2} ${y0+16} L${x-w/4} ${y0} L${x} ${y0+12} L${x+w/4} ${y0} L${x+w/2} ${y0+16}`;
+    const d=`${top} V${y1} L${x} ${y1-10} L${x-w/2} ${y1}Z`;
+    const pat=pk(['dots','lines','hearts'],c.r);let g='';for(let y=y0+70;y<y1-20;y+=16)g+=pat==='dots'?`<circle cx="${x-8}" cy="${y}" r="2.4"/><circle cx="${x+8}" cy="${y+8}" r="2.4"/>`:pat==='lines'?`<path d="M${x-16} ${y} q4 -4 8 0 t8 0 t8 0 t8 0"/>`:tr(x,y,`<path d="${hp(4)}"/>`);
+    s+=G(g)+silLine(keys[i],x-17,y0+24,.34)+`<circle cx="${x}" cy="${y0+14}" r="2.2" fill="#fff" stroke="#2b2b33" stroke-width=".6" stroke-dasharray="1 .8"/>`+cutp(d)});
+  return s+`<text x="105" y="262" font-family="Gowun Dodum" font-size="3.4" text-anchor="middle" fill="#888">색칠하고 오린 뒤, 위 구멍에 리본을 묶으면 책갈피 완성</text>`;
+}
+function actFoldButterfly(c){
+  const P={1:'M105 92 Q122 64 152 72 Q180 86 170 134 Q158 186 105 232',2:'M105 96 Q118 62 156 68 Q186 76 176 124 Q170 140 146 146 Q178 156 172 196 Q164 228 136 214 Q116 204 105 180',3:'M105 96 Q118 62 156 68 Q186 76 176 124 Q170 140 146 146 Q178 156 172 196 Q170 214 156 214 L160 234 Q150 234 146 216 Q124 214 105 184'}[c.diff];
+  const sp2=[...Array(4)].map(()=>`<circle cx="${f(rn(c.r,124,162))}" cy="${f(rn(c.r,86,200))}" r="${f(rn(c.r,4,8))}"/>`).join('');
+  return `<path d="${P}" fill="none" stroke="#d5d9df" stroke-width=".8" stroke-dasharray="2 2" transform="translate(210 0) scale(-1 1)"/>
+  <text x="60" y="160" font-family="Jua" font-size="4" text-anchor="middle" fill="#c4c8cf">접으면 이쪽도</text><text x="60" y="166" font-family="Jua" font-size="4" text-anchor="middle" fill="#c4c8cf">똑같이 잘려요</text>
+  ${G(sp2+(c.diff>1?'<path d="M112 100 Q140 96 160 110 M112 168 Q132 168 150 182"/>':''))}
+  <line x1="105" y1="66" x2="105" y2="244" stroke="#ee6352" stroke-width=".7" stroke-dasharray="3 2"/>${lbl(105,252,'여기를 반으로 접어요',3.6)}
+  ${cutp(P)}${G('<path d="M105 96 Q110 76 118 70"/>')}
+  <text x="105" y="264" font-family="Gowun Dodum" font-size="3.4" text-anchor="middle" fill="#888">① 빨간 점선으로 반 접기 ② 겹친 채로 굵은 선 오리기 ③ 펼치면 짝꿍 나비!</text>`;
+}
+const LEAVES={round:'M0 -24 Q20 -10 16 10 Q10 22 0 24 Q-10 22 -16 10 Q-20 -10 0 -24Z',ginkgo:'M-2 24 L-2 8 Q-24 2 -22 -14 Q-10 -24 0 -18 Q10 -24 22 -14 Q24 2 2 8 L2 24Z',oak:'M0 -26 Q8 -22 6 -16 Q14 -16 12 -8 Q20 -6 14 2 Q20 6 12 12 Q16 20 6 18 Q4 26 0 26 Q-4 26 -6 18 Q-16 20 -12 12 Q-20 6 -14 2 Q-20 -6 -12 -8 Q-14 -16 -6 -16 Q-8 -22 0 -26Z',maple:null};
+function actLeaves(c){
+  const pool=c.diff===1?['round','ginkgo']:c.diff===2?['round','ginkgo','oak']:['oak','maple','maple'];
+  return [[40,108],[105,108],[170,108],[40,200],[105,200],[170,200]].map(([x,y])=>{const k=pk(pool,c.r),s=1.6;
+    if(k==='maple')return silColor('leafM',x-36,y-36,.72);
+    return `<g transform="translate(${x} ${y}) scale(${s})"><g fill="none" stroke="#8a8f98" stroke-width="${f(.55/s)}"><path d="M0 22 V-18 M0 0 L-9 -8 M0 0 L9 -8 M0 10 L-8 4 M0 10 L8 4"/></g><path d="${LEAVES[k]}" fill="none" stroke="#2b2b33" stroke-width="${f(1.2/s)}" stroke-linejoin="round"${S.dash?` stroke-dasharray="${f(3.2/s)} ${f(2/s)}"`:''}/></g>`}).join('')
+  +`<text x="105" y="262" font-family="Gowun Dodum" font-size="3.4" text-anchor="middle" fill="#888">가을 색으로 칠하고 오려서 낙엽 놀이를 해요</text>`;
+}
+Object.assign(ACTS,{
+  lion:{type:'A',icon:'🦁',name:'사자 갈기',desc:'복슬복슬 갈기를 오려요',cap:'어흥! 사자 갈기를 오려요',tip:'종이 아래 끝에서 시작해 빨간 점까지만 오려요',fn:actLion},
+  jelly:{type:'A',icon:'🪼',name:'둥실둥실 해파리',desc:'가는 촉수를 오려요',cap:'둥실둥실! 해파리 촉수를 오려요',tip:'종이 아래 끝에서 시작해 빨간 점까지만 오려요',fn:actJelly,s:['summer']},
+  willow:{type:'A',icon:'🌳',name:'봄바람 버드나무',desc:'늘어진 가지를 오려요',cap:'살랑살랑! 버드나무 가지를 오려요',tip:'종이 아래 끝에서 시작해 빨간 점까지만 오려요',fn:actWillow,s:['spring']},
+  melon:{type:'A',icon:'🍉',name:'수박 썰기',desc:'선을 따라 수박을 썰어요',cap:'시원한 수박! 선을 따라 오려요',tip:'종이 아래 끝에서 시작해 수박 위 빨간 점까지 오려요',fn:actMelon,s:['summer']},
+  rice:{type:'A',icon:'🌾',name:'황금 들판 벼',desc:'벼 줄기 사이를 오려요',cap:'풍성한 가을! 벼 줄기를 오려요',tip:'종이 아래 끝에서 시작해 이삭 아래 빨간 점까지 오려요',fn:actRice,s:['autumn']},
+  scarf:{type:'A',icon:'🧣',name:'털목도리 술',desc:'목도리 끝 술을 오려요',cap:'따뜻한 겨울! 목도리 술을 오려요',tip:'종이 아래 끝에서 시작해 빨간 점까지만 오려요',fn:actScarf,s:['winter']},
+  snowman:{type:'B',icon:'⛄',name:'눈사람 꾸미기',desc:'모자·목도리·장갑 붙이기',cap:'눈사람 꾸미기! 오려서 눈사람에게 붙여요',fn:actSnowman,s:['winter']},
+  atree:{type:'B',icon:'🍁',name:'가을 나무 열매',desc:'열매와 낙엽 붙이기',cap:'가을 나무! 열매를 오려 나무에 달아요',fn:actAutumnTree,s:['autumn']},
+  garden:{type:'B',icon:'🌷',name:'봄 꽃밭 꾸미기',desc:'꽃과 곤충 붙이기',cap:'봄이 왔어요! 오려서 꽃밭을 꾸며요',fn:actGarden,s:['spring']},
+  beach:{type:'B',icon:'🏖️',name:'바닷가 놀이',desc:'양동이·공·파라솔 붙이기',cap:'여름 바다! 오려서 바닷가를 꾸며요',fn:actBeach,s:['summer']},
+  fridge:{type:'B',icon:'🧊',name:'냉장고 정리',desc:'음식을 오려 냉장고에 쏙',cap:'냉장고 정리! 음식을 오려 넣어요',fn:actFridge},
+  dress:{type:'B',icon:'👕',name:'옷 입히기',desc:'모자·윗옷·바지 입히기',cap:'옷 입히기 놀이! 옷을 오려 입혀요',fn:actDress},
+  parking:{type:'B',icon:'🚗',name:'주차장 놀이',desc:'차를 오려 주차 칸에',cap:'주차장 놀이! 차를 오려 주차해요',fn:actParking},
+  farm:{type:'B',icon:'🐷',name:'농장 동물',desc:'동물을 오려 농장에',cap:'농장 놀이! 동물을 오려 데려다 줘요',fn:actFarm},
+  fishing:{type:'C',icon:'🎣',name:'물고기 낚시',desc:'클립 끼워 자석 낚시',cap:'색칠하고 오려서 물고기 낚시를 해요',tip:'물고기를 색칠하고 굵은 선을 따라 오려요',fn:actFishing,noDiff:1,s:['summer']},
+  garland:{type:'C',icon:'🎏',name:'계절 가랜드',desc:'계절 그림 깃발 장식',cap:'색칠하고 오려서 가랜드를 만들어요',tip:'계절을 고르면 그 계절 그림이 나와요',fn:actGarland},
+  bookmark:{type:'C',icon:'🔖',name:'동물 책갈피',desc:'색칠해서 쓰는 책갈피',cap:'색칠하고 오려서 책갈피를 만들어요',tip:'윗부분 모양은 난이도에 따라 바뀌어요',fn:actBookmark,theme:1},
+  fold:{type:'C',icon:'🦋',name:'접어 오리는 나비',desc:'반 접어 오리면 대칭 나비',cap:'반으로 접어 오리면 짝꿍 나비가 나와요',tip:'접은 쪽(빨간 점선)은 오리지 않아요',fn:actFoldButterfly,s:['spring']},
+  leaves:{type:'C',icon:'🍂',name:'가을 낙엽',desc:'색칠하고 오리는 나뭇잎',cap:'색칠하고 오려서 가을 낙엽을 만들어요',tip:'쉬움은 둥근 잎, 어려움은 뾰족한 단풍잎이 나와요',fn:actLeaves,s:['autumn']}
+});
+Object.entries({octo:['summer'],rain:['summer'],wave:['summer'],flower:['spring'],kimbap:['spring'],rainbow:['spring'],bowl:['summer'],vase:['spring'],tree:['winter'],lunch:['spring','autumn'],ornament:['winter'],fan:['summer']}).forEach(([k,v])=>ACTS[k].s=v);
+
 /* ---------- 화면 ---------- */
 function pages(){
   const out=[],r=rng(S.seed+11),keys=Object.keys(allThemes());let k=0;
-  const pick=()=>S.theme==='random'?keys[Math.floor(r()*keys.length)]:S.theme;
+  const pick=()=>S.mode==='rand'&&S.season&&S.season!=='all'?S.season:S.theme==='random'?keys[Math.floor(r()*keys.length)]:S.theme;
   if(S.mode==='rand'){
     const R=S.rand,lvMax={1:2,2:4,3:6}[R.max],pool=[];
     if(R.kinds.includes('line'))for(let l=1;l<=lvMax;l++)pool.push({level:l});
-    Object.keys(ACTS).forEach(a=>{if(R.kinds.includes(ACTS[a].type))pool.push({act:a})});
+    const se=S.season||'all';Object.keys(ACTS).forEach(a=>{const A=ACTS[a];if(!R.kinds.includes(A.type))return;if(se==='all'){pool.push({act:a});return}if(A.s&&A.s.includes(se)){pool.push({act:a},{act:a})}else if(!A.s)pool.push({act:a})});
     if(!pool.length)return out;
     let bag=[];
     for(let i=0;i<S.per;i++){if(!bag.length)bag=shuffle(pool,r);const it=bag.pop();
@@ -806,7 +1069,13 @@ function renderControls(){
   $('again').textContent=S.mode==='rand'?'🎲 다시 뽑기':'🎲 새 모양으로 바꾸기';
   $('perLabel').textContent=S.mode==='rand'?'몇 장 뽑을까요?':S.mode==='act'?'활동마다 몇 장?':'단계마다 몇 장?';
   if(S.mode!=='rand'&&S.per>5)S.per=5;$('per').textContent=S.per;
-  $('acts').innerHTML=Object.entries(TYPES).map(([t,tn])=>`<p class="grp">${tn}</p>`+Object.entries(ACTS).filter(([k,a])=>a.type===t).map(([k,a])=>`<button class="lv" data-act="${k}" aria-pressed="${S.acts.includes(k)}"><span class="ic">${a.icon}</span><span class="t">${a.name}<small>${a.desc}</small></span><span class="chk">✓</span></button>`).join('')).join('');
+  if(!S.season)S.season='all';
+  $('seasons').innerHTML=[['all','🗓️ 전체'],...Object.entries(SEASONS).map(([k,v])=>[k,v.i+' '+v.n])].map(([k,n])=>`<button class="chip" data-se="${k}" aria-pressed="${S.season===k}">${n}</button>`).join('');
+  $('seasonAll').hidden=S.season==='all'||S.mode!=='act';
+  const btn=([k,a])=>`<button class="lv" data-act="${k}" aria-pressed="${S.acts.includes(k)}"><span class="ic">${a.icon}</span><span class="t">${a.name}<small>${a.desc}${a.s?' · '+a.s.map(x=>SEASONS[x].i).join(''):''}</small></span><span class="chk">✓</span></button>`;
+  const E=Object.entries(ACTS);
+  $('acts').innerHTML=S.season==='all'?Object.entries(TYPES).map(([t,tn])=>`<p class="grp">${tn}</p>`+E.filter(([k,a])=>a.type===t).map(btn).join('')).join('')
+   :`<p class="grp">${SEASONS[S.season].i} ${SEASONS[S.season].n} 활동</p>`+E.filter(([k,a])=>a.s&&a.s.includes(S.season)).map(btn).join('')+`<p class="grp">언제나 좋은 활동</p>`+E.filter(([k,a])=>!a.s).map(btn).join('');
   $('diffs').innerHTML=Object.entries(DIFF).map(([d,n])=>`<button class="chip" data-d="${d}" aria-pressed="${S.diff===+d}">${n}</button>`).join('');
   ['Story','Name','Dash','Bw'].forEach(o=>$('o'+o).checked=S[o.toLowerCase()]);
   document.querySelectorAll('#missions .chip').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.m===S.missions));
@@ -826,6 +1095,8 @@ $('themes').addEventListener('click',e=>{const d=e.target.closest('[data-del]');
 $('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.mode=b.dataset.mode;renderControls();render();cheer()});
 $('acts').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;S.acts=S.acts.includes(a)?S.acts.filter(x=>x!==a):[...S.acts,a];renderControls();render()});
 $('diffs').addEventListener('click',e=>{const b=e.target.closest('[data-d]');if(!b)return;S.diff=+b.dataset.d;renderControls();render()});
+$('seasons').addEventListener('click',e=>{const b=e.target.closest('[data-se]');if(!b)return;S.season=b.dataset.se;renderControls();render();cheer()});
+$('seasonAll').onclick=()=>{S.acts=Object.keys(ACTS).filter(k=>ACTS[k].s&&ACTS[k].s.includes(S.season));renderControls();render()};
 $('kinds').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k,K=S.rand.kinds;S.rand.kinds=K.includes(k)?K.filter(x=>x!==k):[...K,k];renderControls();render()});
 $('rmax').addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b)return;S.rand.max=+b.dataset.x;renderControls();render()});
 $('minus').onclick=()=>{S.per=Math.max(1,S.per-1);renderControls();render()};
