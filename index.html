@@ -96,7 +96,7 @@ summary{cursor:pointer;font-family:Jua,sans-serif;font-size:18px;min-height:32px
   </svg>
   <div>
     <h1>싹둑싹둑 오리기 놀이</h1>
-    <p>3~5세 가위 선 따라 오리기 활동지를 단계별로 만들어 인쇄해요</p>
+    <p>3~5세 가위 선 따라 오리기 · 테마 그림 오리기 활동지를 단계별로 만들어 A4로 인쇄해요</p>
   </div>
   <div class="bubble" id="bubble"><b>싹둑이</b> · 단계와 테마를 고르면 활동지가 바로 만들어져요!</div>
 </header>
@@ -108,7 +108,9 @@ summary{cursor:pointer;font-family:Jua,sans-serif;font-size:18px;min-height:32px
       <div class="levels" id="levels"></div>
     </section>
     <section class="box">
-      <h2><span class="n">2</span>단계마다 몇 장?</h2>
+      <h2><span class="n">2</span>한 장에 미션 몇 개?</h2>
+      <div class="chips" id="missions" style="margin-bottom:14px"><button class="chip" data-m="1">크게 1개</button><button class="chip" data-m="2">2개</button></div>
+      <h2 style="font-size:17px">단계마다 몇 장?</h2>
       <div class="row">
         <div class="step"><button id="minus" aria-label="한 장 줄이기">−</button><output id="per">1</output><button id="plus" aria-label="한 장 늘리기">+</button></div>
         <span class="note" id="count"></span>
@@ -135,7 +137,6 @@ summary{cursor:pointer;font-family:Jua,sans-serif;font-size:18px;min-height:32px
         <label><input type="checkbox" id="oName" checked> 이름·날짜 칸 넣기</label>
         <label><input type="checkbox" id="oDash"> 오리는 선을 점선으로</label>
         <label><input type="checkbox" id="oBw"> 흑백으로 (색칠놀이용)</label>
-        <label><input type="checkbox" id="oCert" checked> 가위 박사 도전판·상장 함께 넣기</label>
       </div>
     </section>
     <div class="go">
@@ -151,23 +152,47 @@ summary{cursor:pointer;font-family:Jua,sans-serif;font-size:18px;min-height:32px
 <script>
 {
 const LEVELS={
-  1:{name:'곧은 길 (짧게)',age:'3세~ · 한 번에 싹둑',rows:3,sw:2.4,tip:'엄지가 위로 오게 가위를 잡고, 크게 "싹둑" 한 번에 오려요.'},
-  2:{name:'곧은 길 (길게·비스듬히)',age:'3~4세 · 이어서 오리기',rows:4,sw:1.8,tip:'싹둑을 여러 번 이어서! 종이 잡은 손은 선 가까이 두지 않아요.'},
-  3:{name:'구불구불 물결 길',age:'4세 · 곡선 따라가기',rows:4,sw:1.4,tip:'가위는 천천히, 종이를 잡은 손으로 종이를 살살 돌려 주세요.'},
-  4:{name:'뾰족뾰족 지그재그 길',age:'4~5세 · 방향 바꾸기',rows:4,sw:1.1,tip:'꺾이는 곳에서 멈추고, 종이를 돌린 뒤 다시 오려요.'},
-  5:{name:'모양 오리기',age:'5세~ · 도형 오려내기',rows:4,sw:1.0,tip:'겉 종이를 먼저 크게 잘라낸 뒤, 선을 따라 종이를 돌려 가며 오려요.'}
+  1:{name:'곧은 길 (짧게)',age:'3세~ · 한 번에 싹둑',sw:2.4,tip:'엄지가 위로 오게 가위를 잡고, 크게 "싹둑" 한 번에 오려요.'},
+  2:{name:'곧은 길 (길게·비스듬히)',age:'3~4세 · 이어서 오리기',sw:1.8,tip:'싹둑을 여러 번 이어서! 종이 잡은 손은 선 가까이 두지 않아요.'},
+  3:{name:'구불구불 물결 길',age:'4세 · 곡선 따라가기',sw:1.4,tip:'가위는 천천히, 종이를 잡은 손으로 종이를 살살 돌려 주세요.'},
+  4:{name:'뾰족뾰족 지그재그 길',age:'4~5세 · 방향 바꾸기',sw:1.1,tip:'꺾이는 곳에서 멈추고, 종이를 돌린 뒤 다시 오려요.'},
+  5:{name:'도형 오리기',age:'4~5세 · 동그라미·별·하트',sw:1.1,tip:'겉 종이를 먼저 크게 잘라낸 뒤, 선을 따라 종이를 돌려 가며 오려요.'},
+  6:{name:'테마 그림 오리기',age:'5세~ · 그림 모양대로',sw:1.0,tip:'겉 종이를 먼저 크게 잘라내요. 오린 그림은 색칠해서 붙이거나 놀이에 써요.'}
 };
 const THEMES={
-  animal:{name:'동물 친구',icon:'🐶',pairs:[['🐶','🦴','강아지가 뼈다귀를 찾으러 가요'],['🐰','🥕','토끼가 당근을 먹으러 가요'],['🐱','🐟','고양이가 생선을 만나러 가요'],['🐵','🍌','원숭이가 바나나를 따러 가요'],['🐻','🍯','곰돌이가 꿀단지를 찾아가요'],['🐿️','🌰','다람쥐가 도토리를 주우러 가요'],['🐭','🧀','생쥐가 치즈를 먹으러 가요'],['🐼','🎋','판다가 대나무 숲에 가요']]},
-  car:{name:'부릉부릉 탈것',icon:'🚗',pairs:[['🚗','🏠','자동차가 집으로 돌아가요'],['🚌','🏫','버스가 유치원에 가요'],['🚒','🔥','소방차가 불을 끄러 가요'],['🚑','🏥','구급차가 병원으로 달려가요'],['✈️','☁️','비행기가 구름 위로 날아가요'],['🚂','🚉','기차가 역에 도착해요'],['🚲','🌳','자전거가 공원에 놀러 가요'],['🚜','🌾','트랙터가 밭으로 가요']]},
-  sea:{name:'바닷속 탐험',icon:'🐠',pairs:[['🐠','🌿','물고기가 바닷말 숲에 숨어요'],['🐢','🏝️','거북이가 섬까지 헤엄쳐요'],['🐙','🐚','문어가 조개를 찾으러 가요'],['🦀','🏖️','꽃게가 모래사장으로 가요'],['🐳','🌊','고래가 큰 파도를 타요'],['🐬','⚽','돌고래가 공놀이하러 가요'],['⛵','⚓','돛단배가 항구에 도착해요'],['🦈','🐟','상어가 친구를 만나러 가요']]},
-  space:{name:'우주 여행',icon:'🚀',pairs:[['🚀','🌙','로켓이 달나라에 가요'],['🛸','🌍','우주선이 지구에 놀러 와요'],['☄️','⭐','별똥별이 별님을 만나러 가요'],['🚀','🪐','로켓이 토성 고리를 구경해요'],['👽','🛸','외계인이 우주선에 타러 가요'],['🌙','⭐','달님이 별님에게 인사해요'],['🔭','🌌','망원경으로 은하수를 봐요'],['🚀','☀️','로켓이 해님 곁을 지나가요']]},
-  dino:{name:'공룡 나라',icon:'🦖',pairs:[['🦖','🥚','티라노가 공룡알을 찾으러 가요'],['🦕','🌿','긴목 공룡이 나뭇잎을 먹으러 가요'],['🐣','🦖','아기 공룡이 엄마에게 가요'],['🦖','🌋','공룡이 화산을 구경하러 가요'],['🦕','🏞️','공룡이 호수에 물 마시러 가요'],['🦖','🦴','공룡이 커다란 뼈를 찾았어요'],['🦕','🌴','공룡이 야자나무 아래서 쉬어요'],['🐊','🌊','악어가 강물로 들어가요']]},
-  bug:{name:'숲속 곤충',icon:'🐝',pairs:[['🐝','🌻','꿀벌이 해바라기를 찾아가요'],['🐛','🍎','애벌레가 사과를 먹으러 가요'],['🐞','🍀','무당벌레가 네잎클로버에 가요'],['🦋','🌸','나비가 꽃밭으로 날아가요'],['🐌','🍄','달팽이가 버섯 집에 가요'],['🐜','🍞','개미가 빵 부스러기를 옮겨요'],['🐦','🪺','새가 둥지로 돌아가요'],['🦔','🍂','고슴도치가 낙엽 이불을 찾아가요']]}
+  animal:{name:'동물 친구',icon:'🐶',pairs:[['🐶','🦴','강아지가 뼈다귀를 찾으러 가요'],['🐰','🥕','토끼가 당근을 먹으러 가요'],['🐱','🐟','고양이가 생선을 만나러 가요'],['🐵','🍌','원숭이가 바나나를 따러 가요'],['🐻','🍯','곰돌이가 꿀단지를 찾아가요'],['🐿️','🌰','다람쥐가 도토리를 주우러 가요'],['🐭','🧀','생쥐가 치즈를 먹으러 가요'],['🐼','🎋','판다가 대나무 숲에 가요']],sil:['dog','rabbit','cat','bear']},
+  car:{name:'부릉부릉 탈것',icon:'🚗',pairs:[['🚗','🏠','자동차가 집으로 돌아가요'],['🚌','🏫','버스가 유치원에 가요'],['🚒','🔥','소방차가 불을 끄러 가요'],['🚑','🏥','구급차가 병원으로 달려가요'],['✈️','☁️','비행기가 구름 위로 날아가요'],['🚂','🚉','기차가 역에 도착해요'],['🚲','🌳','자전거가 공원에 놀러 가요'],['🚜','🌾','트랙터가 밭으로 가요']],sil:['car','bus','train']},
+  sea:{name:'바닷속 탐험',icon:'🐠',pairs:[['🐠','🌿','물고기가 바닷말 숲에 숨어요'],['🐢','🏝️','거북이가 섬까지 헤엄쳐요'],['🐙','🐚','문어가 조개를 찾으러 가요'],['🦀','🏖️','꽃게가 모래사장으로 가요'],['🐳','🌊','고래가 큰 파도를 타요'],['🐬','⚽','돌고래가 공놀이하러 가요'],['⛵','⚓','돛단배가 항구에 도착해요'],['🦈','🐟','상어가 친구를 만나러 가요']],sil:['fish','whale','turtle','shell']},
+  space:{name:'우주 여행',icon:'🚀',pairs:[['🚀','🌙','로켓이 달나라에 가요'],['🛸','🌍','우주선이 지구에 놀러 와요'],['☄️','⭐','별똥별이 별님을 만나러 가요'],['🚀','🪐','로켓이 토성 고리를 구경해요'],['👽','🛸','외계인이 우주선에 타러 가요'],['🌙','⭐','달님이 별님에게 인사해요'],['🔭','🌌','망원경으로 은하수를 봐요'],['🚀','☀️','로켓이 해님 곁을 지나가요']],sil:['rocket','moon','ufo','star']},
+  dino:{name:'공룡 나라',icon:'🦖',pairs:[['🦖','🥚','티라노가 공룡알을 찾으러 가요'],['🦕','🌿','긴목 공룡이 나뭇잎을 먹으러 가요'],['🐣','🦖','아기 공룡이 엄마에게 가요'],['🦖','🌋','공룡이 화산을 구경하러 가요'],['🦕','🏞️','공룡이 호수에 물 마시러 가요'],['🦖','🦴','공룡이 커다란 뼈를 찾았어요'],['🦕','🌴','공룡이 야자나무 아래서 쉬어요'],['🐊','🌊','악어가 강물로 들어가요']],sil:['dino','egg','foot']},
+  bug:{name:'숲속 곤충',icon:'🐝',pairs:[['🐝','🌻','꿀벌이 해바라기를 찾아가요'],['🐛','🍎','애벌레가 사과를 먹으러 가요'],['🐞','🍀','무당벌레가 네잎클로버에 가요'],['🦋','🌸','나비가 꽃밭으로 날아가요'],['🐌','🍄','달팽이가 버섯 집에 가요'],['🐜','🍞','개미가 빵 부스러기를 옮겨요'],['🐦','🪺','새가 둥지로 돌아가요'],['🦔','🍂','고슴도치가 낙엽 이불을 찾아가요']],sil:['butterfly','ladybug','snail','bee']}
 };
-const CHEERS=['싹둑! 새 길이 생겼어요','오늘은 어떤 친구를 데려다 줄까요?','천천히 해도 괜찮아요, 끝까지 가면 성공!','다 오리면 별을 색칠해요 ⭐','가위 끝은 늘 몸 바깥쪽으로!','오린 그림에 색칠도 해 보아요'];
+const CHEERS=['싹둑! 새 길이 생겼어요','오늘은 어떤 친구를 데려다 줄까요?','천천히 해도 괜찮아요, 끝까지 가면 성공!','다 오리면 별을 색칠해요 ⭐','오린 그림으로 인형극 놀이 어때요?','가위 끝은 늘 몸 바깥쪽으로!','오린 그림에 색칠도 해 보아요'];
 const NUM=['①','②','③','④','⑤','⑥'];
 const SHAPES={circle:'동그라미를',square:'네모를',tri:'세모를',heart:'하트를',star:'별을',flower:'꽃을',spiral:'달팽이 길'};
+const SIL={
+  fish:{n:'물고기를',d:'M12 50 Q30 22 62 34 L86 20 Q80 50 86 80 L62 66 Q30 78 12 50Z',x:'<circle cx="28" cy="46" r="3"/><path d="M42 36 Q48 50 42 64"/>'},
+  whale:{n:'고래를',d:'M8 55 Q8 30 40 30 Q66 30 74 50 L88 36 Q94 34 92 42 L84 56 L94 66 Q96 72 88 70 L74 62 Q62 80 34 78 Q8 76 8 55Z',x:'<circle cx="24" cy="52" r="3"/><path d="M14 64 Q30 70 46 64"/><path d="M36 24 Q36 14 30 10 M36 24 Q38 14 44 10"/>'},
+  turtle:{n:'거북이를',d:'M14 64 Q16 30 50 28 Q80 30 82 56 L92 52 Q100 54 96 62 L84 66 L80 76 L68 76 L66 66 L34 66 L32 76 L20 76 L18 66Z',x:'<circle cx="91" cy="57" r="1.6"/><path d="M36 42 L50 36 L64 42 L64 54 L50 60 L36 54Z"/>'},
+  shell:{n:'조개를',d:'M20 54 A12 12 0 0 1 26 30 A12 12 0 0 1 50 18 A12 12 0 0 1 74 30 A12 12 0 0 1 80 54 L50 88Z',x:'<path d="M50 82 L32 38 M50 82 L50 28 M50 82 L68 38"/>'},
+  rocket:{n:'로켓을',d:'M18 86 L18 72 L32 56 Q30 22 50 6 Q70 22 68 56 L82 72 L82 86 L66 78 L34 78Z',x:'<circle cx="50" cy="38" r="8"/><path d="M42 84 Q46 94 50 86 Q54 94 58 84"/>'},
+  moon:{n:'달님을',d:'M70 8 A42 42 0 1 0 70 92 A50 50 0 0 1 70 8Z',x:'<circle cx="37" cy="44" r="2"/><path d="M33 58 Q37 62 41 57"/>'},
+  ufo:{n:'우주선을',d:'M10 60 Q22 50 32 48 Q34 24 50 24 Q66 24 68 48 Q78 50 90 60 Q50 82 10 60Z',x:'<circle cx="30" cy="62" r="2.5"/><circle cx="50" cy="65" r="2.5"/><circle cx="70" cy="62" r="2.5"/><path d="M36 48 Q50 52 64 48"/>'},
+  dog:{n:'강아지를',d:'M10 54 Q4 30 16 22 L30 26 Q50 16 70 26 L84 22 Q96 30 90 54 Q86 62 78 56 Q78 82 50 86 Q22 82 22 56 Q14 62 10 54Z',x:'<circle cx="40" cy="48" r="3"/><circle cx="60" cy="48" r="3"/><ellipse cx="50" cy="62" rx="5" ry="3.5"/><path d="M44 72 Q50 76 56 72"/>'},
+  rabbit:{n:'토끼를',d:'M28 58 Q28 38 38 34 L34 10 Q38 2 44 8 L46 32 Q50 31 54 32 L56 8 Q62 2 66 10 L62 34 Q72 38 72 58 Q72 86 50 86 Q28 86 28 58Z',x:'<circle cx="42" cy="56" r="2.5"/><circle cx="58" cy="56" r="2.5"/><path d="M47 66 L50 69 L53 66 M50 69 L50 73"/><path d="M39 14 L42 30 M61 14 L58 30"/>'},
+  cat:{n:'고양이를',d:'M22 50 L20 14 L40 30 Q50 27 60 30 L80 14 L78 50 Q80 84 50 86 Q20 84 22 50Z',x:'<circle cx="40" cy="52" r="3"/><circle cx="60" cy="52" r="3"/><path d="M47 62 L53 62 L50 66Z"/><path d="M30 64 L42 66 M30 70 L42 69 M70 64 L58 66 M70 70 L58 69"/>'},
+  bear:{n:'곰돌이를',d:'M18 60 Q16 46 26 34 A12 12 0 1 1 40 22 Q50 19 60 22 A12 12 0 1 1 74 34 Q84 46 82 60 Q78 86 50 86 Q22 86 18 60Z',x:'<circle cx="40" cy="50" r="3"/><circle cx="60" cy="50" r="3"/><ellipse cx="50" cy="66" rx="10" ry="8"/><circle cx="50" cy="63" r="2.5"/>'},
+  car:{n:'자동차를',d:'M8 70 L8 52 Q10 46 20 44 L30 28 Q34 24 42 24 L64 24 Q70 24 74 30 L84 44 Q94 46 94 56 L94 70 L80 70 A9 9 0 0 1 62 70 L38 70 A9 9 0 0 1 20 70Z',x:'<path d="M34 42 L40 30 L52 30 L52 42Z M58 42 L58 30 L68 30 L76 42Z"/><circle cx="29" cy="72" r="3.5"/><circle cx="71" cy="72" r="3.5"/>'},
+  bus:{n:'버스를',d:'M8 74 L8 26 Q8 18 16 18 L84 18 Q92 18 92 26 L92 74 L80 74 A8 8 0 0 1 64 74 L36 74 A8 8 0 0 1 20 74Z',x:'<path d="M14 28 H30 V44 H14Z M36 28 H52 V44 H36Z M58 28 H74 V44 H58Z M80 28 H88 V60 H80"/><circle cx="28" cy="76" r="3"/><circle cx="72" cy="76" r="3"/>'},
+  train:{n:'기차를',d:'M10 76 L10 40 L30 40 L30 22 L58 22 L58 40 L70 40 L70 26 L80 26 L80 40 L90 40 L90 76 L80 76 A8 8 0 0 1 64 76 L46 76 A8 8 0 0 1 30 76 L26 76 A8 8 0 0 1 10 76Z',x:'<path d="M36 28 H52 V38 H36Z"/><circle cx="72" cy="78" r="2.5"/><circle cx="38" cy="78" r="2.5"/><circle cx="18" cy="78" r="2.5"/><path d="M75 20 Q79 12 75 6"/>'},
+  dino:{n:'공룡을',d:'M8 78 Q16 60 30 52 L56 50 Q62 50 64 40 L66 18 Q68 8 78 8 Q90 10 88 20 L80 22 L76 48 Q76 62 70 68 L72 82 L62 82 L60 70 L38 70 L36 82 L26 82 L26 66 Q16 70 8 78Z',x:'<circle cx="78" cy="14" r="1.8"/><path d="M34 58 Q44 54 54 58"/>'},
+  egg:{n:'공룡알을',d:'M50 10 Q78 10 82 56 Q82 88 50 90 Q18 88 18 56 Q22 10 50 10Z',x:'<path d="M24 50 L34 42 L42 52 L50 42 L58 52 L66 42 L76 50"/><circle cx="38" cy="68" r="4"/><circle cx="62" cy="72" r="5"/>'},
+  foot:{n:'공룡 발자국을',d:'M30 60 Q20 40 26 24 Q32 16 38 26 L42 40 L44 18 Q50 8 56 18 L58 40 L62 26 Q68 16 74 24 Q80 40 70 60 Q70 88 50 88 Q30 88 30 60Z',x:''},
+  butterfly:{n:'나비를',d:'M14 42 Q4 20 16 12 Q38 6 50 30 Q62 6 84 12 Q96 20 86 42 Q78 50 62 50 Q82 54 82 72 Q78 88 62 82 Q54 78 50 64 Q46 78 38 82 Q22 88 18 72 Q18 54 38 50 Q22 50 14 42Z',x:'<path d="M50 30 L50 64"/><circle cx="30" cy="28" r="5"/><circle cx="70" cy="28" r="5"/><circle cx="34" cy="68" r="3.5"/><circle cx="66" cy="68" r="3.5"/>'},
+  ladybug:{n:'무당벌레를',d:'M50 14 Q60 14 62 22 Q84 30 84 56 Q84 86 50 88 Q16 86 16 56 Q16 30 38 22 Q40 14 50 14Z',x:'<path d="M38 24 Q50 30 62 24 M50 28 L50 86"/><circle cx="34" cy="46" r="5"/><circle cx="66" cy="46" r="5"/><circle cx="32" cy="68" r="4"/><circle cx="68" cy="68" r="4"/>'},
+  snail:{n:'달팽이를',d:'M14 80 L14 74 Q20 70 26 70 A26 26 0 1 1 74 64 L82 52 Q86 46 90 52 L88 66 Q92 80 80 80Z',x:'<circle cx="49" cy="58" r="16"/><circle cx="49" cy="58" r="7"/><circle cx="86" cy="56" r="1.5"/>'},
+  bee:{n:'꿀벌을',d:'M18 62 Q18 46 32 43 Q14 30 22 18 Q36 10 48 38 Q60 10 76 18 Q84 30 68 43 Q84 46 84 62 Q84 82 52 82 L50 88 L48 82 Q18 82 18 62Z',x:'<path d="M42 46 Q40 64 44 80 M60 46 Q62 64 58 80"/><circle cx="76" cy="58" r="2"/>'}
+};
 const KEY='scissors-practice-v1';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -175,8 +200,9 @@ const f=n=>Math.round(n*100)/100;
 const rng=seed=>()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
 const shuffle=(a,r)=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const poly=p=>'M'+p.map(q=>f(q[0])+' '+f(q[1])).join('L');
+SIL.star={n:'별을',d:poly(makeShape('star',50,46,42).pts)+'Z',x:'<circle cx="42" cy="46" r="2.5"/><circle cx="58" cy="46" r="2.5"/><path d="M44 56 Q50 61 56 56"/>'};
 
-let S={levels:[1],per:1,theme:'animal',story:true,name:true,dash:false,bw:false,cert:true,seed:Date.now()%100000,custom:{}};
+let S={levels:[1],per:1,theme:'animal',story:true,name:true,dash:false,bw:false,missions:2,seed:Date.now()%100000,custom:{}};
 try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)S={...S,...s,seed:S.seed}}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 const allThemes=()=>({...THEMES,...S.custom});
@@ -186,17 +212,17 @@ function makeLine(lv,r,yc,h){
   const x0=14;
   if(lv===1){const x1=x0+95+r()*35;return{d:`M${x0} ${f(yc)}H${f(x1)}`,s:[x0,yc],e:[x1,yc]}}
   const x1=172,L=x1-x0,N=160,pts=[];
-  if(lv===2){const t=Math.floor(r()*3),a=t?h*.2*(t===1?-1:1):0;return{d:`M${x0} ${f(yc-a)}L${x1} ${f(yc+a)}`,s:[x0,yc-a],e:[x1,yc+a]}}
+  if(lv===2){const t=Math.floor(r()*3),a=t?Math.min(h*.2,40)*(t===1?-1:1):0;return{d:`M${x0} ${f(yc-a)}L${x1} ${f(yc+a)}`,s:[x0,yc-a],e:[x1,yc+a]}}
   if(lv===3){
-    const t=Math.floor(r()*3),A=h*(.15+r()*.08);
-    const per=[1.5,2,2.5,3][Math.floor(r()*4)],hum=3+Math.floor(r()*3);
+    const t=Math.floor(r()*3),A=Math.min(h*(.15+r()*.08),34);
+    const per=[1.5,2,2.5,3][Math.floor(r()*4)],hum=2+Math.floor(r()*3);
     for(let i=0;i<=N;i++){const u=i/N,x=x0+L*u;let y;
       if(t===0)y=yc+A*Math.sin(2*Math.PI*per*u);
-      else if(t===1)y=yc+A*.8-A*1.6*Math.abs(Math.sin(Math.PI*hum*u));
+      else if(t===1)y=yc+A*.8-A*1.6*Math.sin(Math.PI*hum*u)**2;
       else y=yc+A*1.3*Math.sin(2*Math.PI*u);
       pts.push([x,y])}
   }else{
-    const t=Math.floor(r()*3),A=h*(.16+r()*.07);
+    const t=Math.floor(r()*3),A=Math.min(h*(.16+r()*.07),36);
     if(t===0){const k=4+Math.floor(r()*4)*2;for(let i=0;i<=k;i++)pts.push([x0+L*i/k,i===0||i===k?yc:yc+(i%2?-A:A)])}
     else if(t===1){const k=5+Math.floor(r()*2)*2;let y=yc+A;pts.push([x0,y]);for(let i=1;i<=k;i++){const x=x0+L*i/k;pts.push([x,y]);if(i<k){y=y===yc+A?yc-A:yc+A;pts.push([x,y])}}}
     else{const k=6+Math.floor(r()*4);for(let i=0;i<=k;i++)pts.push([x0+L*i/k,i===0||i===k?yc:yc+(i%2?-1:1)*A*(.45+r()*.55)])}
@@ -219,7 +245,7 @@ function makeShape(type,cx,cy,R){
 /* ---------- 활동지 SVG ---------- */
 const emo=(x,y,s,c)=>`<text x="${f(x)}" y="${f(y)}" font-size="${s}" text-anchor="middle" dominant-baseline="central">${esc(c)}</text>`;
 function header(lv,th){
-  const stars='★'.repeat(lv)+'☆'.repeat(5-lv);
+  const stars='★'.repeat(lv)+'☆'.repeat(6-lv);
   return `<rect x="8" y="8" width="194" height="34" rx="5" fill="#fff3c4" stroke="#f0b400" stroke-width=".6"/>
   <text x="14" y="21.5" font-family="Jua" font-size="7.6" fill="#2b2b33">✂ 싹둑싹둑 오리기 놀이</text>
   <text x="14" y="33.5" font-family="Gowun Dodum" font-size="3.8" fill="#2b2b33">${lv}단계 · ${esc(LEVELS[lv].name)}  <tspan fill="#ee6352">${stars}</tspan>  · ${esc(th.icon||'')} ${esc(th.name)}</text>
@@ -234,78 +260,61 @@ function footer(lv){
   <text x="12" y="286.5" font-family="Gowun Dodum" font-size="3" fill="#555"><tspan font-family="Jua">어른과 함께</tspan>  ${esc(LEVELS[lv].tip)}</text>
   <text x="12" y="292" font-family="Gowun Dodum" font-size="3" fill="#555"><tspan font-family="Jua" fill="#ee6352">안전 약속</tspan>  가위 날은 몸 바깥쪽으로 · 다 쓰면 날을 닫아 내려놓기 · 다 오리면 ☆에 색칠해요!</text>`;
 }
+function silhouette(key,tx,ty,k,sw){
+  const s=SIL[key],m=s.d.match(/M\s*([\d.]+)[ ,]([\d.]+)/),mx=tx+k*m[1],my=ty+k*m[2];
+  const dash=S.dash?` stroke-dasharray="${f(3.2/k)} ${f(2/k)}"`:'';
+  return `<g transform="translate(${f(tx)} ${f(ty)}) scale(${k})"><g fill="none" stroke="#bdbdbd" stroke-width="${f(.6/k)}" stroke-linecap="round" stroke-linejoin="round">${s.x}</g><path d="${s.d}" fill="none" stroke="#2b2b33" stroke-width="${f(sw/k)}" stroke-linejoin="round" stroke-linecap="round"${dash}/></g>
+  <line x1="${f(mx-12)}" y1="${f(my)}" x2="${f(mx)}" y2="${f(my)}" stroke="#2b2b33" stroke-width=".5" stroke-dasharray="1.2 1"/>${emo(mx-13,my-5,6.5,'✂️')}`;
+}
 function sheet(pg){
-  if(pg.cert)return certSheet(pg);
-  const lv=pg.level,th=allThemes()[pg.theme]||THEMES.animal,r=rng(pg.seed),L=LEVELS[lv];
+  const lv=pg.level,th=allThemes()[pg.theme]||THEMES.animal,r=rng(pg.seed),L=LEVELS[lv],n=S.missions;
   const items=shuffle(th.pairs,r);
   const dash=S.dash?` stroke-dasharray="3.2 2"`:'';
+  const cap=n===1?7:6;
   let body='';
   if(lv<5){
-    const top0=50,n=L.rows,h=(278-top0)/n;
+    const top0=50,h=(278-top0)/n,gr=13;
     for(let i=0;i<n;i++){
-      const it=items[i%items.length],top=top0+i*h,yc=top+h*.6,ln=makeLine(lv,r,yc,h);
-      body+=`<text x="12" y="${f(top+7)}" font-family="Jua" font-size="4.6" fill="#2b2b33">${NUM[i]} ${esc(it[0])} ${S.story?esc(it[2]):''}</text>
-      <text x="196" y="${f(top+7)}" font-size="7" text-anchor="middle" dominant-baseline="central" fill="#f0b400">☆</text>
-      ${emo(6.5,ln.s[1]-4.5,6,'✂️')}
+      const it=items[i%items.length],top=top0+i*h,yc=top+h*.58,ln=makeLine(lv,r,yc,h);
+      body+=`<text x="12" y="${f(top+10)}" font-family="Jua" font-size="${cap}" fill="#2b2b33">${NUM[i]} ${esc(it[0])} ${S.story?esc(it[2]):''}</text>
+      <text x="196" y="${f(top+9)}" font-size="10" text-anchor="middle" dominant-baseline="central" fill="#f0b400">☆</text>
+      ${emo(6.5,ln.s[1]-5.5,7,'✂️')}
       <path d="${ln.d}" fill="none" stroke="#2b2b33" stroke-width="${L.sw}" stroke-linecap="round" stroke-linejoin="round"${dash}/>
       <circle cx="${f(ln.s[0])}" cy="${f(ln.s[1])}" r="${f(L.sw*.9+.6)}" fill="#3fa7d6"/>
-      <circle cx="${f(ln.e[0]+11)}" cy="${f(ln.e[1])}" r="10" fill="none" stroke="#ee6352" stroke-width=".4" stroke-dasharray="1.4 1"/>
-      ${emo(ln.e[0]+11,ln.e[1]+.6,13,it[1])}`;
+      <circle cx="${f(ln.e[0]+gr+1)}" cy="${f(ln.e[1])}" r="${gr}" fill="none" stroke="#ee6352" stroke-width=".4" stroke-dasharray="1.4 1"/>
+      ${emo(ln.e[0]+gr+1,ln.e[1]+.6,17,it[1])}`;
     }
   }else{
-    const types=shuffle(Object.keys(SHAPES),r).slice(0,4);
-    types.forEach((t,i)=>{
-      const c=i%2,rw=Math.floor(i/2),cx=10+95*c+47.5,cy=50+114*rw+50,R=30,it=items[i%items.length];
-      const sh=makeShape(t,cx,cy,R),p0=sh.pts[0];
-      body+=`<path d="${poly(sh.pts)}${sh.open?'':'Z'}" fill="none" stroke="#2b2b33" stroke-width="${L.sw}" stroke-linejoin="round" stroke-linecap="round"${dash}/>
-      <line x1="${f(p0[0]-11)}" y1="${f(p0[1])}" x2="${f(p0[0])}" y2="${f(p0[1])}" stroke="#2b2b33" stroke-width=".5" stroke-dasharray="1.2 1"/>
-      ${emo(p0[0]-12,p0[1]-4.5,5.5,'✂️')}
-      ${emo(cx,cy+(t==='tri'?6:t==='star'?6:0),t==='spiral'?9:18,i%2?it[1]:it[0])}
-      <text x="${f(cx)}" y="${f(cy+R+15)}" font-family="Jua" font-size="4.8" text-anchor="middle">${NUM[i]} ${SHAPES[t]}${t==='spiral'?'을 따라 빙글빙글':' 오려요'} <tspan fill="#f0b400">☆</tspan></text>`;
-    });
+    const sil=lv===6&&th.sil?shuffle(th.sil,r):null,geo=shuffle(Object.keys(SHAPES),r);
+    for(let i=0;i<n;i++){
+      const it=items[i%items.length];let capY,label;
+      if(sil){
+        const key=sil[i%sil.length],k=n===1?1.6:1,size=100*k,tx=105-size/2,ty=n===1?60:50+i*114;
+        body+=silhouette(key,tx,ty,k,L.sw);
+        capY=ty+size+(n===1?14:8);label=SIL[key].n+' 오려요'+(S.story?' · 오린 뒤 색칠해요':'');
+      }else{
+        const t=geo[i],R=n===1?68:42,cx=105,cy=n===1?140:102+i*114,sh=makeShape(t,cx,cy,R),p0=sh.pts[0];
+        body+=`<path d="${poly(sh.pts)}${sh.open?'':'Z'}" fill="none" stroke="#2b2b33" stroke-width="${L.sw}" stroke-linejoin="round" stroke-linecap="round"${dash}/>
+        <line x1="${f(p0[0]-12)}" y1="${f(p0[1])}" x2="${f(p0[0])}" y2="${f(p0[1])}" stroke="#2b2b33" stroke-width=".5" stroke-dasharray="1.2 1"/>
+        ${emo(p0[0]-13,p0[1]-5,6.5,'✂️')}
+        ${emo(cx,cy+(t==='tri'||t==='star'?6:0),t==='spiral'?R*.25:R*.6,i%2?it[1]:it[0])}`;
+        capY=cy+R+(t==='tri'?16:12);label=SHAPES[t]+(t==='spiral'?'을 따라 빙글빙글':' 오려요');
+      }
+      body+=`<text x="105" y="${f(capY)}" font-family="Jua" font-size="${cap}" text-anchor="middle">${NUM[i]} ${esc(label)} <tspan fill="#f0b400">☆</tspan></text>`;
+    }
   }
   return `<svg viewBox="0 0 210 297" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${lv}단계 오리기 활동지"><rect width="210" height="297" fill="#fff"/>${header(lv,th)}${body}${footer(lv)}</svg>`;
 }
 function mini(lv){
+  if(lv===6)return `<svg viewBox="-45 0 190 100" aria-hidden="true"><path d="${SIL.fish.d}" fill="none" stroke="currentColor" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>`;
   const r=rng(lv*31+3);
   const d=lv<5?makeLine(lv,r,32,70).d:poly(makeShape('heart',95,32,24).pts)+'Z';
   return `<svg viewBox="0 0 190 64" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
-function certSheet(pg){
-  const r=rng(pg.seed),th=allThemes()[pg.theme]||THEMES.animal,em=shuffle(th.pairs,r).flatMap(p=>[p[0],p[1]]);
-  let stamps='';
-  for(let i=1;i<=5;i++){const x=25+(i-1)*40,y=78+(i%2?0:10);
-    stamps+=`<circle cx="${x}" cy="${y}" r="15" fill="#fff" stroke="${i%2?'#3fa7d6':'#ee6352'}" stroke-width=".8"/>
-    <text x="${x}" y="${y-3}" font-family="Jua" font-size="5" text-anchor="middle">${i}단계</text>
-    <text x="${x}" y="${y+5}" font-size="5" text-anchor="middle" fill="#f0b400">☆</text>
-    <text x="${x}" y="${y+22}" font-family="Gowun Dodum" font-size="3" text-anchor="middle" fill="#555">${['짧은 곧은 길','긴 곧은 길','물결 길','지그재그 길','모양 오리기'][i-1]}</text>`}
-  return `<svg viewBox="0 0 210 297" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="가위 박사 도전판과 상장"><rect width="210" height="297" fill="#fff"/>
-  <text x="105" y="30" font-family="Jua" font-size="11" text-anchor="middle">✂ 가위 박사 도전판</text>
-  <text x="105" y="41" font-family="Gowun Dodum" font-size="4.2" text-anchor="middle" fill="#555">한 단계를 마칠 때마다 동그라미에 도장을 찍거나 별을 색칠해요</text>
-  <path d="M25 78 L65 88 L105 78 L145 88 L185 78" fill="none" stroke="#ffd23f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-  ${stamps}
-  ${emo(105,112,7,'🏁')}
-  ${emo(8,126,5.5,'✂️')}
-  <line x1="14" y1="126" x2="200" y2="126" stroke="#2b2b33" stroke-width=".9" stroke-dasharray="3.2 2"/>
-  <text x="200" y="122" font-family="Gowun Dodum" font-size="3" text-anchor="end" fill="#888">이 선을 따라 오리면 상장이 돼요!</text>
-  <rect x="16" y="136" width="178" height="148" rx="4" fill="#fff" stroke="#f0b400" stroke-width="1.6"/>
-  <rect x="20" y="140" width="170" height="140" rx="3" fill="none" stroke="#f0b400" stroke-width=".4"/>
-  ${[[30,150],[180,150],[30,270],[180,270]].map((p,i)=>emo(p[0],p[1],9,em[i]||'⭐')).join('')}
-  <text x="105" y="166" font-family="Jua" font-size="16" text-anchor="middle" letter-spacing="6">상 장</text>
-  <text x="62" y="190" font-family="Jua" font-size="6">이름</text><line x1="76" y1="191" x2="148" y2="191" stroke="#999" stroke-width=".4"/>
-  <text x="105" y="208" font-family="Gowun Dodum" font-size="5" text-anchor="middle">위 어린이는 싹둑싹둑 오리기 놀이에서</text>
-  <text x="105" y="217" font-family="Gowun Dodum" font-size="5" text-anchor="middle">가위를 바르게 잡고 끝까지 멋지게 오렸기에</text>
-  <text x="105" y="226" font-family="Gowun Dodum" font-size="5" text-anchor="middle">이 상장을 주어 칭찬합니다.</text>
-  ${emo(105,246,18,'🏆')}
-  <text x="105" y="266" font-family="Gowun Dodum" font-size="4.4" text-anchor="middle" fill="#555">______년 ____월 ____일</text>
-  <text x="105" y="275" font-family="Jua" font-size="5" text-anchor="middle">싹둑이 선생님</text></svg>`;
-}
-
 /* ---------- 화면 ---------- */
 function pages(){
   const out=[],r=rng(S.seed+11),keys=Object.keys(allThemes());let k=0;
   [...S.levels].sort().forEach(lv=>{for(let i=0;i<S.per;i++){const th=S.theme==='random'?keys[Math.floor(r()*keys.length)]:S.theme;out.push({level:lv,theme:th,seed:S.seed+(k++)*7919})}});
-  if(S.cert)out.push({cert:true,theme:S.theme==='random'?keys[0]:S.theme,seed:S.seed+99});
   return out;
 }
 function renderControls(){
@@ -314,13 +323,14 @@ function renderControls(){
   $('themes').innerHTML=Object.entries(T).map(([k,v])=>`<button class="chip" data-th="${esc(k)}" aria-pressed="${S.theme===k}">${esc(v.icon||'🌈')} ${esc(v.name)}${S.custom[k]?`<span class="x" data-del="${esc(k)}" title="테마 지우기" role="button" aria-label="${esc(v.name)} 테마 지우기">✕</span>`:''}</button>`).join('')
    +`<button class="chip" data-th="random" aria-pressed="${S.theme==='random'}">🎲 깜짝 테마</button>`;
   $('per').textContent=S.per;
-  ['Story','Name','Dash','Bw','Cert'].forEach(o=>$('o'+o).checked=S[o.toLowerCase()]);
+  ['Story','Name','Dash','Bw'].forEach(o=>$('o'+o).checked=S[o.toLowerCase()]);
+  document.querySelectorAll('#missions .chip').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.m===S.missions));
 }
 function render(){
   if(!(S.theme in allThemes())&&S.theme!=='random')S.theme='animal';
   const P=pages();
   $('app').classList.toggle('bw',S.bw);
-  $('preview').innerHTML=P.length?P.map((p,i)=>`<div class="tag">${i+1}쪽 · ${p.cert?'가위 박사 도전판·상장':p.level+'단계 · '+esc(allThemes()[p.theme].name)}</div><div class="sheet">${sheet(p)}</div>`).join(''):'<p class="note">단계를 하나 이상 골라 주세요.</p>';
+  $('preview').innerHTML=P.length?P.map((p,i)=>`<div class="tag">${i+1}쪽 · ${p.level}단계 · ${esc(allThemes()[p.theme].name)}${p.level===6&&!allThemes()[p.theme].sil?' (그림 모양이 없는 테마라 도형으로 나와요)':''}</div><div class="sheet">${sheet(p)}</div>`).join(''):'<p class="note">단계를 하나 이상 골라 주세요.</p>';
   $('count').textContent=`모두 ${P.length}장을 인쇄해요`;
   save();
 }
@@ -330,7 +340,8 @@ $('levels').addEventListener('click',e=>{const b=e.target.closest('.lv');if(!b)r
 $('themes').addEventListener('click',e=>{const d=e.target.closest('[data-del]');if(d){delete S.custom[d.dataset.del];if(S.theme===d.dataset.del)S.theme='animal';renderControls();render();return}const b=e.target.closest('.chip');if(!b)return;S.theme=b.dataset.th;renderControls();render();cheer()});
 $('minus').onclick=()=>{S.per=Math.max(1,S.per-1);renderControls();render()};
 $('plus').onclick=()=>{S.per=Math.min(5,S.per+1);renderControls();render()};
-['Story','Name','Dash','Bw','Cert'].forEach(o=>$('o'+o).addEventListener('change',e=>{S[o.toLowerCase()]=e.target.checked;render()}));
+$('missions').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;S.missions=+b.dataset.m;renderControls();render()});
+['Story','Name','Dash','Bw'].forEach(o=>$('o'+o).addEventListener('change',e=>{S[o.toLowerCase()]=e.target.checked;render()}));
 $('again').onclick=()=>{S.seed=Math.floor(Math.random()*1e6);render();cheer()};
 if(window.self!==window.top)$('warn').style.display='block';
 $('print').onclick=()=>{try{window.print()}catch(e){$('warn').style.display='block'}};
