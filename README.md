@@ -18,4 +18,4 @@
 ## GitHub Pages로 배포
 1. 이 저장소의 **Settings → Pages**로 이동
 2. Source: **Deploy from a branch**, Branch: **main / (root)** 선택 후 Save
-3. 1~2분 뒤 `https://<계정명>.github.io/<저장소명>/` 에서 열립니다.
+3. 1~2분 뒤 `https://jinhae1123.github.io/cutcut/` 에서 열립니다.
